@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Run Backend + Frontend",
+      "configurations": ["Spring Boot", "React App"]
+    }
+  ],
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot",
+      "request": "launch",
+      "mainClass": "com.hidro.manh.ManhApplication",
+      "projectName": "manh"
+    },
+    {
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "React App",
+      "cwd": "${workspaceFolder}/manhf",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal"
+    }
+  ]
+}
