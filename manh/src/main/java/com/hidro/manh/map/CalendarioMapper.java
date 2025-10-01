@@ -1,4 +1,4 @@
-// map/CalendarioMapper.java
+// map/CalendarioMapper.java - VERSIÓN CORREGIDA
 package com.hidro.manh.map;
 
 import com.hidro.manh.ety.Calendario;
@@ -127,17 +127,8 @@ public class CalendarioMapper {
             calendario.setTecnico(tecnico);
         }
 
-        if (dto.getIdOrdenMantenimiento() != null) {
-            OrdenMantenimiento ordenMantenimiento = ordenMantenimientoRepository.findById(dto.getIdOrdenMantenimiento())
-                    .orElseThrow(() -> new RuntimeException("Orden de mantenimiento no encontrada"));
-            calendario.setOrdenMantenimiento(ordenMantenimiento);
-        }
-
-        if (dto.getIdOrdenReparacion() != null) {
-            OrdenReparacion ordenReparacion = ordenReparacionRepository.findById(dto.getIdOrdenReparacion())
-                    .orElseThrow(() -> new RuntimeException("Orden de reparación no encontrada"));
-            calendario.setOrdenReparacion(ordenReparacion);
-        }
+        // NOTA: CreateCalendarioDTO no tiene campos para órdenes de mantenimiento/reparación
+        // Estas relaciones se establecerían posteriormente si es necesario
 
         return calendario;
     }
@@ -191,17 +182,8 @@ public class CalendarioMapper {
             calendario.setTecnico(tecnico);
         }
 
-        if (dto.getIdOrdenMantenimiento() != null) {
-            OrdenMantenimiento ordenMantenimiento = ordenMantenimientoRepository.findById(dto.getIdOrdenMantenimiento())
-                    .orElseThrow(() -> new RuntimeException("Orden de mantenimiento no encontrada"));
-            calendario.setOrdenMantenimiento(ordenMantenimiento);
-        }
-
-        if (dto.getIdOrdenReparacion() != null) {
-            OrdenReparacion ordenReparacion = ordenReparacionRepository.findById(dto.getIdOrdenReparacion())
-                    .orElseThrow(() -> new RuntimeException("Orden de reparación no encontrada"));
-            calendario.setOrdenReparacion(ordenReparacion);
-        }
+        // NOTA: UpdateCalendarioDTO no tiene campos para órdenes de mantenimiento/reparación
+        // Estas relaciones se manejarían en servicios específicos si es necesario
 
         return calendario;
     }

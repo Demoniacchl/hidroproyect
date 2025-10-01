@@ -1,0 +1,10 @@
+package com.hidro.manh.enums;
+
+public enum TipoAlerta {
+    MANTENCION_PROXIMA,
+    REPARACION_PENDIENTE,
+    EQUIPO_INACTIVO,
+    EVENTO_PROXIMO,
+    SOLICITUD_PENDIENTE,
+    MANTENCION_VENCIDA
+}

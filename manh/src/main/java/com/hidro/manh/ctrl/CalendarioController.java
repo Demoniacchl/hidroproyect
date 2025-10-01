@@ -67,7 +67,7 @@ public class CalendarioController {
     public Calendario programarMantención(
             @PathVariable Long clienteId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fecha) {
-        return calendarioService.crearEventoMantencionProgramada(clienteId, fecha);
+        return calendarioService.crearEventoMantenciónProgramada(clienteId, fecha);
     }
     
     @GetMapping("/proximos")
