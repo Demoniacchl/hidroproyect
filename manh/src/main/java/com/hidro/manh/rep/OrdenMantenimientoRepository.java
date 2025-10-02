@@ -1,6 +1,7 @@
 package com.hidro.manh.rep;
 
-import java.time.LocalDateTime;
+
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,16 +10,17 @@ import com.hidro.manh.ety.OrdenMantenimiento;
 
 public interface OrdenMantenimientoRepository extends JpaRepository<OrdenMantenimiento, Long> {
 
-    // Agregar estos métodos a tu OrdenMantenimientoRepository.java existente
 
-Optional<OrdenMantenimiento> findTopByEquipoUbicacionClienteIdClienteOrderByHoraIngresoDesc(Long clienteId);
-List<OrdenMantenimiento> findByTecnicoIdUsuario(Long tecnicoId);
+
+Optional<OrdenMantenimiento> findTopByIdMotorUbicacionClienteIdClienteOrderByHoraIngresoDesc(Long clienteId);
+Long countByIdMotorUbicacionClienteIdCliente(Long clienteId);
+List<OrdenMantenimiento> findByIdTecnicoIdUsuario(Long tecnicoId);
 List<OrdenMantenimiento> findByHoraSalidaIsNull();
-Long countByHoraIngresoBetween(LocalDateTime inicio, LocalDateTime fin);
-Long countByEquipoUbicacionClienteIdCliente(Long clienteId);
-Long countByTecnicoIdUsuario(Long tecnicoId);
-Long countByTecnicoIdUsuarioAndHoraIngresoBetween(Long tecnicoId, LocalDateTime inicio, LocalDateTime fin);
-Optional<OrdenMantenimiento> findTopByEquipoIdMotorOrderByHoraIngresoDesc(Long equipoId);
-Long countByEquipoIdMotor(Long equipoId);
+Long countByHoraIngresoBetween(Date inicio, Date fin);
+Long countByIdMotorUbicacionIdCliente(Long clienteId);
+Long countByIdTecnicoIdUsuario(Long tecnicoId);
+Long countByIdTecnicoIdUsuarioAndHoraIngresoBetween(Long tecnicoId, Date inicio, Date fin);
+Optional<OrdenMantenimiento> findTopByIdMotorIdMotorOrderByHoraIngresoDesc(Long equipoId);
+Long countByIdMotorIdMotor(Long equipoId);
 
 }

@@ -1,17 +1,26 @@
 // srs/ReporteService.java - VERSIÓN CORREGIDA
 package com.hidro.manh.srs;
 
+import com.hidro.manh.enums.RolUsuario;
 import com.hidro.manh.ety.*;
 import com.hidro.manh.rep.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import com.hidro.manh.ety.Cliente;
+import com.hidro.manh.ety.EquipoMotor;
+import com.hidro.manh.ety.OrdenMantenimiento;
+import com.hidro.manh.ety.Usuario;
+import com.hidro.manh.rep.ClienteRepository;
+import com.hidro.manh.rep.EquipoMotorRepository;
+import com.hidro.manh.rep.OrdenMantenimientoRepository;
+import com.hidro.manh.rep.UsuarioRepository;
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 
 @Service
 public class ReporteService {
@@ -67,7 +76,7 @@ public class ReporteService {
                     reporteItem.put("correo", cliente.getCorreo());
                     
                     // Estadísticas del cliente
-                    Long totalEquipos = equipoMotorRepository.countByUbicacionClienteIdCliente(cliente.getIdCliente());
+                    Long totalEquipos = equipoMotorRepository.countByUbicacionIdCliente(cliente.getIdCliente());
                     Long totalMantenciones = ordenMantenimientoRepository.countByEquipoUbicacionClienteIdCliente(cliente.getIdCliente());
                     
                     reporteItem.put("totalEquipos", totalEquipos);
@@ -80,7 +89,7 @@ public class ReporteService {
 
     public List<Map<String, Object>> generarReporteTecnicos() {
         // Buscar técnicos por rol
-        List<Usuario> tecnicos = usuarioRepository.findByRol(com.hidro.manh.enums.RolUsuario.TECNICO);
+        List<Usuario> tecnicos = usuarioRepository.findByRol(RolUsuario.TECNICO);
         
         return tecnicos.stream()
                 .map(tecnico -> {

@@ -2,8 +2,8 @@ package com.hidro.manh.srs;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.hidro.manh.rep.OrdenReparacionRepository;
@@ -38,18 +38,18 @@ public class OrdenReparacionService {
 public OrdenReparacion actualizarProgreso(Long id, String progreso) {
     OrdenReparacion orden = findById(id);
     orden.setProgreso(progreso);
-    return ordenReparacionRepository.save(orden);
+    return repo.save(orden);
 }
 
 public List<OrdenReparacion> findByClienteId(Long clienteId) {
-    return ordenReparacionRepository.findByEquipoUbicacionClienteIdCliente(clienteId);
+    return repo.findByEquipoUbicacionClienteIdCliente(clienteId);
 }
 
 public List<OrdenReparacion> findByEstado(String estado) {
-    return ordenReparacionRepository.findByProgreso(estado);
+    return repo.findByProgreso(estado);
 }
 
 public List<OrdenReparacion> findByFechaAfter(LocalDateTime fecha) {
-    return ordenReparacionRepository.findByFechaAfter(fecha);
+    return repo.findByFechaAfter(fecha);
 }
 }

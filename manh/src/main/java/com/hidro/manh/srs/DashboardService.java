@@ -13,6 +13,20 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.hidro.manh.ety.Calendario;
+import com.hidro.manh.ety.Cliente;
+import com.hidro.manh.ety.EquipoMotor;
+import com.hidro.manh.ety.OrdenMantenimiento;
+import com.hidro.manh.ety.OrdenReparacion;
+import com.hidro.manh.ety.Solicitud;
+import com.hidro.manh.ety.Usuario;
+import com.hidro.manh.rep.CalendarioRepository;
+import com.hidro.manh.rep.ClienteRepository;
+import com.hidro.manh.rep.EquipoMotorRepository;
+import com.hidro.manh.rep.OrdenMantenimientoRepository;
+import com.hidro.manh.rep.OrdenReparacionRepository;
+import com.hidro.manh.rep.SolicitudRepository;
+import com.hidro.manh.rep.UsuarioRepository;
 
 @Service
 public class DashboardService {
@@ -41,7 +55,8 @@ public class DashboardService {
         // Estadísticas básicas
         estadisticas.setTotalClientes(clienteRepository.count());
         estadisticas.setTotalEquipos(equipoMotorRepository.count());
-        
+        equipoMotorRepository.countByUbicacionClienteIdCliente(clienteId)
+        ordenMantenimientoRepository.countByIdMotorUbicacionClienteIdCliente(clienteId)
         // Mantenciones y reparaciones este mes
         LocalDateTime inicioMes = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         LocalDateTime finMes = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59);

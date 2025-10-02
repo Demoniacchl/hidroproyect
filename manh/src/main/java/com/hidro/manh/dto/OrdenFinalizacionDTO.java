@@ -1,6 +1,7 @@
 package com.hidro.manh.dto;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Map;
 
 public class OrdenFinalizacionDTO {
@@ -16,7 +17,9 @@ public class OrdenFinalizacionDTO {
     private String firmaCliente; // Base64 o JSON con firma
     
     public OrdenFinalizacionDTO() {}
-    
+    public Date getHoraSalidaAsDate() {
+    return java.sql.Timestamp.valueOf(this.horaSalida);
+}
     // Getters y Setters
     public Long getIdOrden() { return idOrden; }
     public void setIdOrden(Long idOrden) { this.idOrden = idOrden; }

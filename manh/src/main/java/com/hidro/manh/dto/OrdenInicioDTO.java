@@ -1,6 +1,7 @@
 package com.hidro.manh.dto;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 public class OrdenInicioDTO {
     private Long idEquipo;
@@ -16,7 +17,9 @@ public class OrdenInicioDTO {
         this.horaIngreso = horaIngreso;
         this.tipoOrden = tipoOrden;
     }
-    
+    public Date getHoraIngresoAsDate() {
+    return java.sql.Timestamp.valueOf(this.horaIngreso);
+}
     // Getters y Setters
     public Long getIdEquipo() { return idEquipo; }
     public void setIdEquipo(Long idEquipo) { this.idEquipo = idEquipo; }

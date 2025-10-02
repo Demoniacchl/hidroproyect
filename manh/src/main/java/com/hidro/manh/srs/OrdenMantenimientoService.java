@@ -1,26 +1,41 @@
 package com.hidro.manh.srs;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import com.hidro.manh.dto.OrdenInicioDTO;
+import com.hidro.manh.dto.OrdenFinalizacionDTO;
+import com.hidro.manh.ety.EquipoMotor;
+import com.hidro.manh.ety.Usuario;
+import com.hidro.manh.ety.OrdenReparacion;
+import com.hidro.manh.rep.EquipoMotorRepository;
+import com.hidro.manh.rep.UsuarioRepository;
+import com.hidro.manh.rep.OrdenReparacionRepository;
+import java.util.Date;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.hidro.manh.rep.OrdenMantenimientoRepository;
 import com.hidro.manh.map.OrdenMantenimientoMapper;
-import com.hidro.manh.dto.OrdenFinalizacionDTO;
-import com.hidro.manh.dto.OrdenInicioDTO;
 import com.hidro.manh.dto.OrdenMantenimientoDto;
-import com.hidro.manh.ety.EquipoMotor;
 import com.hidro.manh.ety.OrdenMantenimiento;
-import com.hidro.manh.ety.OrdenReparacion;
-import com.hidro.manh.ety.Usuario;
 
 @Service
 @RequiredArgsConstructor
 public class OrdenMantenimientoService {
     private final OrdenMantenimientoRepository repo;
     private final OrdenMantenimientoMapper mapper;
+@Autowired
+private EquipoMotorRepository equipoMotorRepository;
+
+@Autowired
+private UsuarioRepository usuarioRepository;
+
+@Autowired
+private OrdenReparacionRepository ordenReparacionRepository;
 
     public List<OrdenMantenimientoDto> getAll() {
         return repo.findAll().stream().map(mapper::toDto).collect(Collectors.toList());
@@ -38,7 +53,8 @@ public class OrdenMantenimientoService {
     public void delete(Long id) {
         repo.deleteById(id);
     }
-    // Agregar estos métodos a tu OrdenMantenimientoService.java existente
+   
+
 
 public OrdenMantenimiento iniciarOrden(OrdenInicioDTO ordenInicio) {
     EquipoMotor equipo = equipoMotorRepository.findById(ordenInicio.getIdEquipo())
@@ -48,12 +64,12 @@ public OrdenMantenimiento iniciarOrden(OrdenInicioDTO ordenInicio) {
         .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
     
     OrdenMantenimiento orden = new OrdenMantenimiento();
-    orden.setEquipo(equipo);
+    orden.setMotor(equipo);
     orden.setTecnico(tecnico);
     orden.setHoraIngreso(ordenInicio.getHoraIngreso());
     orden.setTipoOrden(ordenInicio.getTipoOrden());
     
-    return ordenMantenimientoRepository.save(orden);
+    return repo.save(orden);
 }
 
 public OrdenMantenimiento finalizarOrden(Long idOrden, OrdenFinalizacionDTO finalizacion) {
@@ -79,11 +95,11 @@ public OrdenMantenimiento finalizarOrden(Long idOrden, OrdenFinalizacionDTO fina
     orden.setT(finalizacion.getLecturaT());
     orden.setVoltaje(finalizacion.getVoltaje());
     
-    return ordenMantenimientoRepository.save(orden);
+    return repo.save(orden);
 }
 
 public OrdenMantenimiento findUltimaByClienteId(Long clienteId) {
-    return ordenMantenimientoRepository
+    return repo
         .findTopByEquipoUbicacionClienteIdClienteOrderByHoraIngresoDesc(clienteId)
         .orElseThrow(() -> new RuntimeException("No se encontraron mantenciones para el cliente"));
 }
@@ -94,10 +110,10 @@ public List<OrdenReparacion> findReparaciones30DiasByClienteId(Long clienteId) {
 }
 
 public List<OrdenMantenimiento> findByTecnicoId(Long tecnicoId) {
-    return ordenMantenimientoRepository.findByTecnicoIdUsuario(tecnicoId);
+    return repo.findByTecnicoIdUsuario(tecnicoId);
 }
 
 public List<OrdenMantenimiento> findByHoraSalidaIsNull() {
-    return ordenMantenimientoRepository.findByHoraSalidaIsNull();
+    return repo.findByHoraSalidaIsNull();
 }
 }
