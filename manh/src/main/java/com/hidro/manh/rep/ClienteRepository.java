@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+
 
 import java.util.Optional;
 
@@ -14,8 +14,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     // Lista de clientes con sus ubicaciones
     @Query("SELECT DISTINCT c FROM Cliente c LEFT JOIN FETCH c.ubicaciones u LEFT JOIN u.region r LEFT JOIN u.comuna cm")
     Page<Cliente> findAllWithUbicaciones(Pageable pageable);
-    @Query("SELECT c FROM Cliente c WHERE c.nCliente = :nCliente")
-    Optional<Cliente> findByNCliente(@Param("nCliente") Integer nCliente);
+   
+    Optional<Cliente> findByNCliente(Integer n_cliente);
     // Clientes filtrados por región
     @Query("SELECT DISTINCT c FROM Cliente c LEFT JOIN c.ubicaciones u WHERE u.regionId = ?1")
     Page<Cliente> findAllByRegion(Integer regionId, Pageable pageable);
