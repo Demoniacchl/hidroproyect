@@ -20,7 +20,10 @@ public class UbicacionController {
     public List<Ubicacion> getAllUbicaciones() {
         return ubicacionService.getAllUbicaciones();
     }
-
+   @GetMapping("/buscar")
+  public List<Ubicacion> getByNombre(@RequestParam String nombre) {
+    return ubicacionService.findByNombreContaining(nombre);
+  }
     // Filtrar por región
     @GetMapping("/region/{regionId}")
     public List<Ubicacion> getUbicacionesByRegion(@PathVariable Integer regionId) {

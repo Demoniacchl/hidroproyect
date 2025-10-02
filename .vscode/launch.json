@@ -12,7 +12,12 @@
       "name": "Spring Boot",
       "request": "launch",
       "mainClass": "com.hidro.manh.ManhApplication",
-      "projectName": "manh"
+      "projectName": "manh",
+      "cwd": "${workspaceFolder}/manh",
+      "args": "",
+      "env": {
+        "SPRING_PROFILES_ACTIVE": "dev"
+      }
     },
     {
       "type": "pwa-node",

@@ -1,5 +1,6 @@
 package com.hidro.manh.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,7 +15,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import com.hidro.manh.security.*;
+
+import com.hidro.manh.security.JwtAuthFilter;
+import com.hidro.manh.security.JwtAuthenticationEntryPoint;
 
 import java.util.Arrays;
 
@@ -22,14 +25,11 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    private final JwtRequestFilter jwtRequestFilter;
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    public SecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint, 
-                         JwtRequestFilter jwtRequestFilter) {
-        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
-        this.jwtRequestFilter = jwtRequestFilter;
-    }
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -45,44 +45,24 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable()) // ✅ Seguro porque usamos JWT stateless
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos
-                .requestMatchers("/api/auth/**", "/error").permitAll()
-                
-                // Endpoints solo para SUPER_ADMIN (configuración del sistema)
-                .requestMatchers("/api/config/**", "/api/usuarios/super/**").hasRole("SUPER_ADMIN")
-                
-                // Endpoints para ADMIN (gestión empresarial)
-                .requestMatchers("/api/clientes/**", "/api/ubicaciones/**", 
-                               "/api/equipos/**", "/api/calendario/**",
-                               "/api/dashboard/admin/**", "/api/reportes/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                
-                // Endpoints para TÉCNICOS (operaciones en terreno)
-                .requestMatchers("/api/ordenes-mantenimiento/**", "/api/ordenes-reparacion/**",
-                               "/api/dashboard/tecnico/**", "/api/mis-ordenes/**").hasAnyRole("TECNICO", "ADMIN", "SUPER_ADMIN")
-                
-                // Endpoints mixtos
-                .requestMatchers("/api/dashboard/**").authenticated()
-                
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
             )
-            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:[*]", 
-            "http://192.168.1.[*]:[*]",
-            "https://tu-empresa.ddns.net:[*]"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

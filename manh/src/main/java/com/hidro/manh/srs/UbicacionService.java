@@ -43,4 +43,8 @@ public class UbicacionService {
     public void deleteUbicacion(Long idUbicacion) {
         ubicacionRepository.deleteById(idUbicacion);
     }
+        public List<Ubicacion> findByNombreContaining(String nombre) {
+        return ubicacionRepository.findByNombreContainingIgnoreCase(nombre);
+    }
+        
 }

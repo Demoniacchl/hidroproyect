@@ -44,7 +44,7 @@ public class DashboardService {
         Date startDate = Date.from(startOfMonth.atZone(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(endOfMonth.atZone(ZoneId.systemDefault()).toInstant());
         
-        return ordenMantenimientoRepository.countByFechaBetween(startDate, endDate);
+        return ordenMantenimientoRepository.countByHoraIngresoBetween(startDate, endDate);
     }
 
     // MÉTODOS EXISTENTES CORREGIDOS
@@ -76,7 +76,7 @@ public class DashboardService {
     }
     
     public List<Map<String, Object>> getOrdenesMantenimientoRecientes() {
-        return ordenMantenimientoRepository.findTop5ByOrderByFechaDesc()
+        return ordenMantenimientoRepository.findTop5ByOrderByHoraIngresoDesc()
             .stream()
             .map(orden -> {
                 Map<String, Object> map = new HashMap<>();

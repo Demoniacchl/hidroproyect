@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface UbicacionRepository extends JpaRepository<Ubicacion, Long> {
+    List<Ubicacion> findByNombreContainingIgnoreCase(String nombre);
 List<Ubicacion> findByCliente_IdCliente(Long idCliente);
     List<Ubicacion> findByRegionId(Integer regionId);
     List<Ubicacion> findByComunaId(Integer comunaId);

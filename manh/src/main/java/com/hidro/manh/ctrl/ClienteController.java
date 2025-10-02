@@ -5,6 +5,7 @@ import com.hidro.manh.srs.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -21,7 +22,13 @@ public class ClienteController {
     public Page<Cliente> getAllClientes(Pageable pageable) {
         return clienteService.getAllClientes(pageable);
     }
-
+    // Buscar cliente por número de cliente
+@GetMapping("/numero/{nCliente}")
+public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer nCliente) {
+    Optional<Cliente> cliente = clienteService.findByNCliente(nCliente);
+    return cliente.map(ResponseEntity::ok)
+                 .orElse(ResponseEntity.notFound().build());
+}
     // Filtrar clientes por región
     @GetMapping("/region/{regionId}")
     public Page<Cliente> getClientesByRegion(@PathVariable Integer regionId, Pageable pageable) {

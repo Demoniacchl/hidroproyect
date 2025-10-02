@@ -19,8 +19,14 @@ public interface OrdenMantenimientoRepository extends JpaRepository<OrdenManteni
     List<OrdenMantenimiento> findByHoraIngresoBetween(Date start, Date end);
     List<OrdenMantenimiento> findByMotor(EquipoMotor motor);
     List<OrdenMantenimiento> findByTecnico(Usuario tecnico);
-    List<OrdenMantenimiento> findTop5ByOrderByFechaDesc();
-    Long countByFechaBetween(Date start, Date end);
+    
+    // MÉTODO CORREGIDO - usar horaIngreso en lugar de fecha
+    @Query("SELECT o FROM OrdenMantenimiento o ORDER BY o.horaIngreso DESC LIMIT 5")
+    List<OrdenMantenimiento> findTop5ByOrderByHoraIngresoDesc();
+    
+    // MÉTODO CORREGIDO - contar por horaIngreso en lugar de fecha
+    @Query("SELECT COUNT(o) FROM OrdenMantenimiento o WHERE o.horaIngreso BETWEEN :start AND :end")
+    Long countByHoraIngresoBetween(@Param("start") Date start, @Param("end") Date end);
 
     // MÉTODOS FALTANTES PARA ReporteService
     

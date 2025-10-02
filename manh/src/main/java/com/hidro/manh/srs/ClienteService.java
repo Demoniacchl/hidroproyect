@@ -44,4 +44,7 @@ public class ClienteService {
     public void deleteCliente(Long idCliente) {
         clienteRepository.deleteById(idCliente);
     }
+    public Optional<Cliente> findByNCliente(Integer nCliente) {
+    return clienteRepository.findByNCliente(nCliente);
+}
 }
