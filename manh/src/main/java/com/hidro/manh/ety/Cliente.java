@@ -15,7 +15,7 @@ public class Cliente {
     @Column(name = "id_cliente")
     private Long idCliente;
 
-    private Integer n_cliente;
+    private Integer ncliente;
     private String nombre1;
     private String rut;
     private String telefono1;

@@ -24,8 +24,8 @@ public class ClienteController {
     }
     // Buscar cliente por número de cliente
 @GetMapping("/numero/{nCliente}")
-public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer nCliente) {
-    Optional<Cliente> cliente = clienteService.findByNCliente(nCliente);
+public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer ncliente) {
+    Optional<Cliente> cliente = clienteService.findByNcliente(ncliente); 
     return cliente.map(ResponseEntity::ok)
                  .orElse(ResponseEntity.notFound().build());
 }

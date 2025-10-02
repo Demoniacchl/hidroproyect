@@ -11,7 +11,7 @@ public class ClienteMapper {
 
         return ClienteDto.builder()
                 .idCliente(cliente.getIdCliente())
-                .nCliente(cliente.getN_cliente())
+                .nCliente(cliente.getNcliente())
                 .nombre1(cliente.getNombre1())
                 .rut(cliente.getRut())
                 .telefono1(cliente.getTelefono1())

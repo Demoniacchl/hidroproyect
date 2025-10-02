@@ -15,7 +15,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     @Query("SELECT DISTINCT c FROM Cliente c LEFT JOIN FETCH c.ubicaciones u LEFT JOIN u.region r LEFT JOIN u.comuna cm")
     Page<Cliente> findAllWithUbicaciones(Pageable pageable);
    
-    Optional<Cliente> findByNCliente(Integer n_cliente);
+    Optional<Cliente> findByNcliente(Integer ncliente);
     // Clientes filtrados por región
     @Query("SELECT DISTINCT c FROM Cliente c LEFT JOIN c.ubicaciones u WHERE u.regionId = ?1")
     Page<Cliente> findAllByRegion(Integer regionId, Pageable pageable);

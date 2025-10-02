@@ -27,7 +27,7 @@ public class CalendarioService {
             .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
         
         Calendario evento = new Calendario();
-        evento.setTitulo("Mantención Programada - " + cliente.getN_cliente());
+        evento.setTitulo("Mantención Programada - " + cliente.getNcliente());
         evento.setTipoEvento(TipoEvento.MANTENCION);
         evento.setFechaInicio(fecha);
         evento.setFechaFin(fecha.plusHours(2));

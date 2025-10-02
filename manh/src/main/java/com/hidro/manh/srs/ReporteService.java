@@ -77,7 +77,7 @@ public class ReporteService {
                 .map(cliente -> {
                     Map<String, Object> reporteItem = new HashMap<>();
                     reporteItem.put("id", cliente.getIdCliente());
-                    reporteItem.put("nCliente", cliente.getN_cliente());
+                    reporteItem.put("nCliente", cliente.getNcliente());
                     reporteItem.put("nombre", cliente.getNombre1());
                     reporteItem.put("contacto", cliente.getTelefono1());
                     reporteItem.put("correo", cliente.getCorreo());
