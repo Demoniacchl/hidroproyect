@@ -1,5 +1,5 @@
 package com.hidro.manh.map;
-
+    
 import com.hidro.manh.dto.DashboardEstadisticasDTO;
 import com.hidro.manh.dto.AlertaDTO;
 import com.hidro.manh.ety.Calendario;
@@ -65,11 +65,21 @@ public class DashboardMapper {
     public Map<String, Object> toOrdenPendienteMap(OrdenMantenimiento orden) {
         Map<String, Object> mapa = new HashMap<>();
         mapa.put("id", orden.getIdOrden());
-        mapa.put("equipo", orden.getEquipo().getMarca() + " " + orden.getEquipo().getModelo());
-        mapa.put("cliente", orden.getEquipo().getUbicacion().getCliente().getNombre1());
-        mapa.put("tecnico", orden.getTecnico().getNombre());
+        
+        // Usar getIdMotor() en lugar de getEquipo()
+        if (orden.getIdMotor() != null) {
+            mapa.put("equipo", orden.getIdMotor().getMarca() + " " + orden.getIdMotor().getModelo());
+            if (orden.getIdMotor().getUbicacion() != null && orden.getIdMotor().getUbicacion().getCliente() != null) {
+                mapa.put("cliente", orden.getIdMotor().getUbicacion().getCliente().getNombre1());
+                mapa.put("ubicacion", orden.getIdMotor().getUbicacion().getNombre());
+            }
+        }
+        
+        if (orden.getIdTecnico() != null) {
+            mapa.put("tecnico", orden.getIdTecnico().getNombre());
+        }
+        
         mapa.put("horaIngreso", orden.getHoraIngreso());
-        mapa.put("ubicacion", orden.getEquipo().getUbicacion().getNombre());
         
         return mapa;
     }

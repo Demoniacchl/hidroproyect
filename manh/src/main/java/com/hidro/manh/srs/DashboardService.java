@@ -13,20 +13,6 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.hidro.manh.ety.Calendario;
-import com.hidro.manh.ety.Cliente;
-import com.hidro.manh.ety.EquipoMotor;
-import com.hidro.manh.ety.OrdenMantenimiento;
-import com.hidro.manh.ety.OrdenReparacion;
-import com.hidro.manh.ety.Solicitud;
-import com.hidro.manh.ety.Usuario;
-import com.hidro.manh.rep.CalendarioRepository;
-import com.hidro.manh.rep.ClienteRepository;
-import com.hidro.manh.rep.EquipoMotorRepository;
-import com.hidro.manh.rep.OrdenMantenimientoRepository;
-import com.hidro.manh.rep.OrdenReparacionRepository;
-import com.hidro.manh.rep.SolicitudRepository;
-import com.hidro.manh.rep.UsuarioRepository;
 
 @Service
 public class DashboardService {
@@ -55,12 +41,12 @@ public class DashboardService {
         // Estadísticas básicas
         estadisticas.setTotalClientes(clienteRepository.count());
         estadisticas.setTotalEquipos(equipoMotorRepository.count());
-        equipoMotorRepository.countByUbicacionClienteIdCliente(clienteId)
-        ordenMantenimientoRepository.countByIdMotorUbicacionClienteIdCliente(clienteId)
-        // Mantenciones y reparaciones este mes
-        LocalDateTime inicioMes = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime finMes = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59);
         
+        // Convertir LocalDateTime a Date para las consultas
+        java.util.Date inicioMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0));
+        java.util.Date finMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59));
+        
+        // Mantenciones y reparaciones este mes
         Long mantencionesMes = ordenMantenimientoRepository.countByHoraIngresoBetween(inicioMes, finMes);
         Long reparacionesMes = ordenReparacionRepository.countByFechaBetween(inicioMes, finMes);
         
@@ -105,32 +91,13 @@ public class DashboardService {
             alertas.add(alerta);
         }
         
-        // Alertas de equipos inactivos (sin mantenciones en 30 días)
-        LocalDateTime hace30Dias = LocalDateTime.now().minusDays(30);
-        List<Object[]> equiposInactivos = equipoMotorRepository.findEquiposSinMantencionReciente(hace30Dias);
-        
-        for (Object[] resultado : equiposInactivos) {
-            EquipoMotor equipo = (EquipoMotor) resultado[0];
-            AlertaDTO alerta = new AlertaDTO();
-            alerta.setTipo("EQUIPO_INACTIVO");
-            alerta.setTitulo("Equipo Sin Mantención Reciente");
-            alerta.setDescripcion("El equipo " + equipo.getMarca() + " " + equipo.getModelo() + " no tiene mantenciones en los últimos 30 días");
-            alerta.setIdCliente(equipo.getUbicacion().getCliente().getIdCliente());
-            alerta.setNombreCliente(equipo.getUbicacion().getCliente().getNombre1());
-            alerta.setIdEquipo(equipo.getIdMotor());
-            alerta.setNombreEquipo(equipo.getMarca() + " " + equipo.getModelo());
-            alerta.setFechaGeneracion(LocalDateTime.now());
-            alerta.setLeida(false);
-            
-            alertas.add(alerta);
-        }
-        
         return alertas;
     }
 
-    public List<Object> getProximasMantenciones() {
+    public List<Map<String, Object>> getProximasMantenciones() {
         LocalDateTime ahora = LocalDateTime.now();
-        List<Calendario> proximasMantenciones = calendarioRepository.findProximasMantenciones(ahora);
+        List<Calendario> proximasMantenciones = calendarioRepository.findByTipoEventoAndFechaInicioAfter(
+            com.hidro.manh.enums.TipoEvento.MANTENCION, ahora);
         
         return proximasMantenciones.stream()
                 .map(evento -> {
@@ -145,17 +112,28 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
-    public List<Object> getOrdenesPendientes() {
+    public List<Map<String, Object>> getOrdenesPendientes() {
         List<OrdenMantenimiento> ordenesPendientes = ordenMantenimientoRepository.findByHoraSalidaIsNull();
         
         return ordenesPendientes.stream()
                 .map(orden -> {
                     Map<String, Object> mapa = new HashMap<>();
                     mapa.put("id", orden.getIdOrden());
-                    mapa.put("equipo", orden.getEquipo().getMarca() + " " + orden.getEquipo().getModelo());
-                    mapa.put("cliente", orden.getEquipo().getUbicacion().getCliente().getNombre1());
-                    mapa.put("tecnico", orden.getTecnico().getNombre());
+                    
+                    // Usar getIdMotor() en lugar de getEquipo()
+                    if (orden.getMotor() != null) {
+                        mapa.put("equipo", orden.getMotor().getMarca() + " " + orden.getMotor().getModelo());
+                        if (orden.getMotor().getUbicacion() != null && orden.getMotor().getUbicacion().getCliente() != null) {
+                            mapa.put("cliente", orden.getMotor().getUbicacion().getCliente().getNombre1());
+                        }
+                    }
+                    
+                    if (orden.getIdTecnico() != null) {
+                        mapa.put("tecnico", orden.getIdTecnico().getNombre());
+                    }
+                    
                     mapa.put("horaIngreso", orden.getHoraIngreso());
+                    
                     return mapa;
                 })
                 .collect(Collectors.toList());

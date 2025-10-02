@@ -1,26 +1,17 @@
-// srs/ReporteService.java - VERSIÓN CORREGIDA
 package com.hidro.manh.srs;
 
-import com.hidro.manh.enums.RolUsuario;
 import com.hidro.manh.ety.*;
+import com.hidro.manh.enums.RolUsuario;
 import com.hidro.manh.rep.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.hidro.manh.ety.Cliente;
-import com.hidro.manh.ety.EquipoMotor;
-import com.hidro.manh.ety.OrdenMantenimiento;
-import com.hidro.manh.ety.Usuario;
-import com.hidro.manh.rep.ClienteRepository;
-import com.hidro.manh.rep.EquipoMotorRepository;
-import com.hidro.manh.rep.OrdenMantenimientoRepository;
-import com.hidro.manh.rep.UsuarioRepository;
+
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 
 @Service
 public class ReporteService {
@@ -38,21 +29,37 @@ public class ReporteService {
     private EquipoMotorRepository equipoMotorRepository;
 
     public List<Map<String, Object>> generarReporteMantenciones(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
-        List<OrdenMantenimiento> mantenciones = ordenMantenimientoRepository.findByHoraIngresoBetween(fechaInicio, fechaFin);
+        // Convertir LocalDateTime a Date
+        java.util.Date inicio = java.sql.Timestamp.valueOf(fechaInicio);
+        java.util.Date fin = java.sql.Timestamp.valueOf(fechaFin);
+        
+        List<OrdenMantenimiento> mantenciones = ordenMantenimientoRepository.findByHoraIngresoBetween(inicio, fin);
         
         return mantenciones.stream()
                 .map(mantencion -> {
                     Map<String, Object> reporteItem = new HashMap<>();
                     reporteItem.put("id", mantencion.getIdOrden());
-                    reporteItem.put("fecha", mantencion.getHoraIngreso().toLocalDate());
-                    reporteItem.put("cliente", mantencion.getEquipo().getUbicacion().getCliente().getNombre1());
-                    reporteItem.put("equipo", mantencion.getEquipo().getMarca() + " " + mantencion.getEquipo().getModelo());
-                    reporteItem.put("tecnico", mantencion.getTecnico().getNombre());
+                    reporteItem.put("fecha", mantencion.getHoraIngreso());
                     reporteItem.put("tipo", "MANTENCION");
+                    
+                    // Usar getIdMotor() en lugar de getEquipo()
+                    if (mantencion.getMotor() != null) {
+                        reporteItem.put("equipo", mantencion.getMotor().getMarca() + " " + mantencion.getMotor().getModelo());
+                        if (mantencion.getMotor().getUbicacion() != null && mantencion.getMotor().getUbicacion().getCliente() != null) {
+                            reporteItem.put("cliente", mantencion.getMotor().getUbicacion().getCliente().getNombre1());
+                        }
+                    }
+                    
+                    if (mantencion.getTecnico() != null) {
+                        reporteItem.put("tecnico", mantencion.getTecnico().getNombre());
+                    }
                     
                     // Calcular duración
                     if (mantencion.getHoraSalida() != null) {
-                        Duration duracion = Duration.between(mantencion.getHoraIngreso(), mantencion.getHoraSalida());
+                        Duration duracion = Duration.between(
+                            mantencion.getHoraIngreso().toInstant(), 
+                            mantencion.getHoraSalida().toInstant()
+                        );
                         reporteItem.put("duracion", duracion.toHours() + " horas");
                     } else {
                         reporteItem.put("duracion", "En progreso");
@@ -70,14 +77,14 @@ public class ReporteService {
                 .map(cliente -> {
                     Map<String, Object> reporteItem = new HashMap<>();
                     reporteItem.put("id", cliente.getIdCliente());
-                    reporteItem.put("nCliente", cliente.getNCliente());
+                    reporteItem.put("nCliente", cliente.getN_cliente());
                     reporteItem.put("nombre", cliente.getNombre1());
                     reporteItem.put("contacto", cliente.getTelefono1());
                     reporteItem.put("correo", cliente.getCorreo());
                     
                     // Estadísticas del cliente
-                    Long totalEquipos = equipoMotorRepository.countByUbicacionIdCliente(cliente.getIdCliente());
-                    Long totalMantenciones = ordenMantenimientoRepository.countByEquipoUbicacionClienteIdCliente(cliente.getIdCliente());
+                    Long totalEquipos = equipoMotorRepository.countByUbicacionClienteIdCliente(cliente.getIdCliente());
+                    Long totalMantenciones = ordenMantenimientoRepository.countByIdMotorUbicacionClienteIdCliente(cliente.getIdCliente());
                     
                     reporteItem.put("totalEquipos", totalEquipos);
                     reporteItem.put("totalMantenciones", totalMantenciones);
@@ -99,13 +106,13 @@ public class ReporteService {
                     reporteItem.put("usuario", tecnico.getUsuario());
                     
                     // Estadísticas del técnico
-                    Long totalMantenciones = ordenMantenimientoRepository.countByTecnicoIdUsuario(tecnico.getIdUsuario());
+                    Long totalMantenciones = ordenMantenimientoRepository.countByIdTecnicoIdUsuario(tecnico.getIdUsuario());
                     
                     // Mantenciones este mes
-                    LocalDateTime inicioMes = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-                    LocalDateTime finMes = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59);
+                    java.util.Date inicioMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0));
+                    java.util.Date finMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59));
                     
-                    Long mantencionesEsteMes = ordenMantenimientoRepository.countByTecnicoIdUsuarioAndHoraIngresoBetween(
+                    Long mantencionesEsteMes = ordenMantenimientoRepository.countByIdTecnicoIdUsuarioAndHoraIngresoBetween(
                         tecnico.getIdUsuario(), inicioMes, finMes);
                     
                     reporteItem.put("totalMantenciones", totalMantenciones);
@@ -132,15 +139,15 @@ public class ReporteService {
                     reporteItem.put("estado", equipo.getEstado());
                     
                     // Estadísticas del equipo
-                    Long totalMantenciones = ordenMantenimientoRepository.countByEquipoIdMotor(equipo.getIdMotor());
+                    Long totalMantenciones = ordenMantenimientoRepository.countByIdMotorIdMotor(equipo.getIdMotor());
                     reporteItem.put("totalMantenciones", totalMantenciones);
                     
                     // Última mantención
                     ordenMantenimientoRepository
-                        .findTopByEquipoIdMotorOrderByHoraIngresoDesc(equipo.getIdMotor())
+                        .findTopByIdMotorIdMotorOrderByHoraIngresoDesc(equipo.getIdMotor())
                         .ifPresentOrElse(
                             ultimaMantencion -> {
-                                reporteItem.put("ultimaMantencion", ultimaMantencion.getHoraIngreso().toLocalDate());
+                                reporteItem.put("ultimaMantencion", ultimaMantencion.getHoraIngreso());
                             },
                             () -> {
                                 reporteItem.put("ultimaMantencion", "Nunca");
