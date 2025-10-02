@@ -1,17 +1,14 @@
 package com.hidro.manh.rep;
 
-import java.util.Date;
+import com.hidro.manh.ety.OrdenReparacion;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.hidro.manh.ety.OrdenReparacion;
-
+@Repository
 public interface OrdenReparacionRepository extends JpaRepository<OrdenReparacion, Long> {
-// Agregar estos métodos al repository existente:
-List<OrdenReparacion> findByEquipoUbicacionClienteIdCliente(Long clienteId);
-List<OrdenReparacion> findByIdMotorUbicacionClienteIdCliente(Long clienteId);
-List<OrdenReparacion> findByIdMotorUbicacionClienteIdClienteAndFechaAfter(Long clienteId, Date fecha);
-List<OrdenReparacion> findByProgreso(String progreso);
-List<OrdenReparacion> findByFechaAfter(Date fecha);
-Long countByFechaBetween(Date inicio, Date fin);
+    
+    // MÉTODOS FALTANTES
+    List<OrdenReparacion> findByEquipoUbicacionClienteIdCliente(Long clienteId);
 }

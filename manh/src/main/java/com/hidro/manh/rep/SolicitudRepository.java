@@ -1,29 +1,28 @@
 package com.hidro.manh.rep;
 
-import java.util.List;
-import java.util.Map;
-
+import com.hidro.manh.ety.Solicitud;
+import com.hidro.manh.enums.EstadoSolicitud;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
-import com.hidro.manh.enums.EstadoSolicitud;
-import com.hidro.manh.ety.Solicitud;
+import java.util.List;
 
+@Repository
 public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
-    // Agregar estos métodos a tu SolicitudRepository.java existente
-
-List<Solicitud> findByEstado(String estado);
-Long countByEstado(EstadoSolicitud estado);
-    @Query("SELECT new map(s.estado as estado, COUNT(s) as count) FROM Solicitud s GROUP BY s.estado")
-    List<Map<String, Object>> countByEstadoSolicitud();
     
-    // O si prefieres usar una proyección con interfaz:
+    // MÉTODO FALTANTE
+    Long countByEstado(EstadoSolicitud estado);
+    
+    // MÉTODO CORREGIDO - USANDO PROYECCIÓN
     @Query("SELECT s.estado as estado, COUNT(s) as count FROM Solicitud s GROUP BY s.estado")
     List<EstadoCountProjection> countSolicitudesByEstado();
     
-    // Interfaz para la proyección
     interface EstadoCountProjection {
         EstadoSolicitud getEstado();
         Long getCount();
     }
+    
+    // MÉTODOS EXISTENTES
+    List<Solicitud> findByEstado(EstadoSolicitud estado);
 }

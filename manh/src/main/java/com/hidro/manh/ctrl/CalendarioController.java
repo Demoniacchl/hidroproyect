@@ -3,81 +3,71 @@ package com.hidro.manh.ctrl;
 import com.hidro.manh.ety.Calendario;
 import com.hidro.manh.srs.CalendarioService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/calendario")
-@CrossOrigin(origins = "*")
 public class CalendarioController {
-    
+
     @Autowired
     private CalendarioService calendarioService;
-    
+
+    // MÉTODO CORREGIDO - USANDO EL NOMBRE EXACTO
+    @PostMapping("/evento-mantencion-programada")
+    public ResponseEntity<String> crearEventoMantenciónProgramada(
+            @RequestParam Long clienteId, 
+            @RequestParam LocalDateTime fecha) {
+        try {
+            calendarioService.crearEventoMantenciónProgramada(clienteId, fecha);
+            return ResponseEntity.ok("Evento de mantención programada creado exitosamente");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al crear evento: " + e.getMessage());
+        }
+    }
+
+    // MÉTODOS EXISTENTES
     @GetMapping
-    public List<Calendario> getAllEventos() {
-        return calendarioService.findAll();
+    public List<Calendario> getAll() {
+        return calendarioService.getAll();
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Calendario> getEventoById(@PathVariable Long id) {
-        Calendario evento = calendarioService.findById(id);
-        return ResponseEntity.ok(evento);
+    public ResponseEntity<Calendario> getById(@PathVariable Long id) {
+        Optional<Calendario> calendario = calendarioService.getById(id);
+        return calendario.map(ResponseEntity::ok)
+                        .orElse(ResponseEntity.notFound().build());
     }
     
     @PostMapping
-    public Calendario createEvento(@RequestBody Calendario evento) {
-        return calendarioService.save(evento);
+    public Calendario create(@RequestBody Calendario calendario) {
+        return calendarioService.save(calendario);
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Calendario> updateEvento(@PathVariable Long id, @RequestBody Calendario eventoDetails) {
-        Calendario updatedEvento = calendarioService.update(id, eventoDetails);
-        return ResponseEntity.ok(updatedEvento);
+    public ResponseEntity<Calendario> update(@PathVariable Long id, @RequestBody Calendario calendario) {
+        if (!calendarioService.getById(id).isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        calendario.setIdCalendario(id);
+        return ResponseEntity.ok(calendarioService.save(calendario));
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEvento(@PathVariable Long id) {
-        calendarioService.deleteById(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @GetMapping("/rango")
-    public List<Calendario> getEventosPorRango(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return calendarioService.findByFechaRange(start, end);
-    }
-    
-    @GetMapping("/tecnico/{tecnicoId}")
-    public List<Calendario> getEventosPorTecnico(@PathVariable Long tecnicoId) {
-        return calendarioService.findByTecnico(tecnicoId);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!calendarioService.getById(id).isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        calendarioService.delete(id);
+        return ResponseEntity.noContent().build();
     }
     
     @GetMapping("/cliente/{clienteId}")
-    public List<Calendario> getEventosPorCliente(@PathVariable Long clienteId) {
-        return calendarioService.findByCliente(clienteId);
-    }
-    
-    @PostMapping("/programar-mantencion/{clienteId}")
-    public Calendario programarMantención(
-            @PathVariable Long clienteId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fecha) {
-        return calendarioService.crearEventoMantenciónProgramada(clienteId, fecha);
-    }
-    
-    @GetMapping("/proximos")
-    public List<Calendario> getEventosProximos() {
-        return calendarioService.getEventosProximos();
-    }
-    
-    @PutMapping("/{id}/notificado")
-    public ResponseEntity<?> marcarNotificado(@PathVariable Long id) {
-        calendarioService.marcarComoNotificado(id);
-        return ResponseEntity.ok().build();
+    public List<Calendario> getByClienteId(@PathVariable Long clienteId) {
+        return calendarioService.findByClienteId(clienteId);
     }
 }
