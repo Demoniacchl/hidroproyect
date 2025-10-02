@@ -22,4 +22,30 @@ export interface PaginatedResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+  first: boolean;
+  last: boolean;
+}
+
+// Interfaces para las solicitudes
+export interface Solicitud {
+  id: number;
+  idOrden: number;
+  tipoOrden: string;
+  estado: EstadoSolicitud;
+  fechaCreacion: string;
+  observacionesAdmin?: string;
+}
+
+// Interfaces para el calendario
+export interface EventoCalendario {
+  id: number;
+  idCliente: number;
+  idEquipo?: number;
+  idTecnico: number;
+  tipoEvento: TipoEvento;
+  titulo: string;
+  descripcion: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: EstadoCalendario;
 }

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Input from '../../ui/Input/Input';
-import Button from '../../ui/Button/Button';
 import { useAuth } from '../../../hooks/useAuth';
 import { authService } from '../../../services/auth.service';
+import './LoginForm.css';
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +20,6 @@ const LoginForm: React.FC = () => {
       ...prev,
       [field]: value
     }));
-    // Limpiar error cuando el usuario empiece a escribir
     if (error) setError('');
   };
 
@@ -31,10 +29,14 @@ const LoginForm: React.FC = () => {
     setError('');
 
     try {
-      const userData = await authService.login(formData);
+      const springCredentials = {
+        username: formData.usuario,
+        password: formData.contrasena
+      };
+      
+      const userData = await authService.login(springCredentials);
       login(userData);
       
-      // Redirigir según el rol
       switch (userData.rol) {
         case 'SUPER_ADMIN':
           navigate('/super-admin');
@@ -49,97 +51,61 @@ const LoginForm: React.FC = () => {
           navigate('/dashboard');
       }
     } catch (err: any) {
-      setError('Credenciales inválidas. Por favor intenta nuevamente.');
-      console.error('Login error:', err);
+      setError(err.message || 'Credenciales inválidas. Por favor intenta nuevamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemoCredentials = (usuario: string, contrasena: string) => {
-    setFormData({ usuario, contrasena });
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🔧</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Sistema de Mantenciones
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Ingresa a tu cuenta
-          </p>
+    <div className="login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <h1>Hidrohiguiene</h1>
+          <br></br>
+          <p>Ingresa tus credenciales</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="Usuario"
-            type="text"
-            placeholder="Ingresa tu usuario"
-            value={formData.usuario}
-            onChange={(value) => handleChange('usuario', value)}
-            required
-          />
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="usuario">Usuario</label>
+            <input
+              id="usuario"
+              type="text"
+              value={formData.usuario}
+              onChange={(e) => handleChange('usuario', e.target.value)}
+              placeholder="Ingresa tu usuario"
+              disabled={loading}
+            />
+          </div>
 
-          <Input
-            label="Contraseña"
-            type="password"
-            placeholder="Ingresa tu contraseña"
-            value={formData.contrasena}
-            onChange={(value) => handleChange('contrasena', value)}
-            required
-          />
+          <div className="form-group">
+            <label htmlFor="contrasena">Contraseña</label>
+            <input
+              id="contrasena"
+              type="password"
+              value={formData.contrasena}
+              onChange={(e) => handleChange('contrasena', e.target.value)}
+              placeholder="Ingresa tu contraseña"
+              disabled={loading}
+            />
+          </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="error-message">
+              {error}
             </div>
           )}
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            loading={loading}
-            disabled={!formData.usuario || !formData.contrasena}
-            className="w-full"
+          <button 
+            type="submit" 
+            className="login-button"
+            disabled={loading || !formData.usuario || !formData.contrasena}
           >
             {loading ? 'Ingresando...' : 'Ingresar'}
-          </Button>
+          </button>
         </form>
 
-        {/* Demo Accounts */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <h3 className="text-sm font-medium text-gray-600 mb-3 text-center">
-            Cuentas de Demo
-          </h3>
-          <div className="space-y-2">
-            <button
-              onClick={() => fillDemoCredentials('superadmin', 'password')}
-              className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm"
-            >
-              <strong>Super Admin:</strong> superadmin / password
-            </button>
-            <button
-              onClick={() => fillDemoCredentials('admin', 'password')}
-              className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm"
-            >
-              <strong>Admin:</strong> admin / password
-            </button>
-            <button
-              onClick={() => fillDemoCredentials('tecnico', 'password')}
-              className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm"
-            >
-              <strong>Técnico:</strong> tecnico / password
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
