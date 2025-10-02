@@ -12,7 +12,8 @@ import java.util.List;
 
 public interface CalendarioRepository extends JpaRepository<Calendario, Long> {
 
-    Long countByNotificadoFalseAndFechaInicioAfter(LocalDateTime fecha);
+    List<Calendario> findByClienteIdCliente(Long clienteId);
+    List<Calendario> findByTipoEventoAndFechaInicioAfter(TipoEvento tipoEvento, LocalDateTime fecha);
     
     List<Calendario> findByFechaInicioBetween(LocalDateTime start, LocalDateTime end);
     

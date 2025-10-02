@@ -7,53 +7,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/dashboard")
 @CrossOrigin(origins = "*")
+@RequestMapping("/api/dashboard")
 public class DashboardController {
     
     @Autowired
     private DashboardService dashboardService;
     
-    @GetMapping("/estadisticas")
-    public ResponseEntity<DashboardEstadisticasDTO> getEstadisticas() {
+    @GetMapping("/solicitudes-por-estado")
+    public ResponseEntity<List<Map<String, Object>>> getSolicitudesPorEstado() {
         try {
-            DashboardEstadisticasDTO estadisticas = dashboardService.getEstadisticas();
-            return ResponseEntity.ok(estadisticas);
+            List<Map<String, Object>> data = dashboardService.getSolicitudesPorEstado();
+            return ResponseEntity.ok(data);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
     
-    @GetMapping("/alertas")
-    public ResponseEntity<List<AlertaDTO>> getAlertas() {
-        try {
-            List<AlertaDTO> alertas = dashboardService.getAlertas();
-            return ResponseEntity.ok(alertas);
-        } catch (Exception e) {
-            return ResponseEntity.ok(List.of());
-        }
-    }
-    
-    @GetMapping("/proximas-mantenciones")
-    public ResponseEntity<List<Object>> getProximasMantenciones() {
-        try {
-            List<Object> proximasMantenciones = dashboardService.getProximasMantenciones();
-            return ResponseEntity.ok(proximasMantenciones);
-        } catch (Exception e) {
-            return ResponseEntity.ok(List.of());
-        }
-    }
-    
-    @GetMapping("/ordenes-pendientes")
-    public ResponseEntity<List<Object>> getOrdenesPendientes() {
-        try {
-            List<Object> ordenesPendientes = dashboardService.getOrdenesPendientes();
-            return ResponseEntity.ok(ordenesPendientes);
-        } catch (Exception e) {
-            return ResponseEntity.ok(List.of());
-        }
+    // Los otros endpoints que mencionan los errores también necesitan corrección
+    @GetMapping("/metricas-generales")
+    public ResponseEntity<Map<String, Object>> getMetricasGenerales() {
+        Map<String, Object> metricas = new HashMap<>();
+        
+        // Asegúrate de que todos los valores sean tipos compatibles
+        metricas.put("totalSolicitudes", dashboardService.getTotalSolicitudes());
+        metricas.put("solicitudesPendientes", dashboardService.getSolicitudesPendientes());
+        metricas.put("mantencionesEsteMes", dashboardService.getMantencionesEsteMes());
+        
+        return ResponseEntity.ok(metricas);
     }
 }

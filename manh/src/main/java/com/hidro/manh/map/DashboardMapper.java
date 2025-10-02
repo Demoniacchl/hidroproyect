@@ -1,5 +1,5 @@
 package com.hidro.manh.map;
-    
+
 import com.hidro.manh.dto.DashboardEstadisticasDTO;
 import com.hidro.manh.dto.AlertaDTO;
 import com.hidro.manh.ety.Calendario;
@@ -67,16 +67,16 @@ public class DashboardMapper {
         mapa.put("id", orden.getIdOrden());
         
         // Usar getIdMotor() en lugar de getEquipo()
-        if (orden.getIdMotor() != null) {
-            mapa.put("equipo", orden.getIdMotor().getMarca() + " " + orden.getIdMotor().getModelo());
-            if (orden.getIdMotor().getUbicacion() != null && orden.getIdMotor().getUbicacion().getCliente() != null) {
-                mapa.put("cliente", orden.getIdMotor().getUbicacion().getCliente().getNombre1());
-                mapa.put("ubicacion", orden.getIdMotor().getUbicacion().getNombre());
+        if (orden.getMotor() != null) {
+            mapa.put("equipo", orden.getMotor().getMarca() + " " + orden.getMotor().getModelo());
+            if (orden.getMotor().getUbicacion() != null && orden.getMotor().getUbicacion().getCliente() != null) {
+                mapa.put("cliente", orden.getMotor().getUbicacion().getCliente().getNombre1());
+                mapa.put("ubicacion", orden.getMotor().getUbicacion().getNombre());
             }
         }
         
-        if (orden.getIdTecnico() != null) {
-            mapa.put("tecnico", orden.getIdTecnico().getNombre());
+        if (orden.getTecnico() != null) {
+            mapa.put("tecnico", orden.getTecnico().getNombre());
         }
         
         mapa.put("horaIngreso", orden.getHoraIngreso());

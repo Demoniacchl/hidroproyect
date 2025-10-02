@@ -19,6 +19,7 @@ List<OrdenMantenimiento> findByHoraSalidaIsNull();
 Long countByHoraIngresoBetween(Date inicio, Date fin);
 Long countByIdMotorUbicacionIdCliente(Long clienteId);
 Long countByIdTecnicoIdUsuario(Long tecnicoId);
+List<OrdenMantenimiento> findByHoraIngresoBetween(Date start, Date end);
 Long countByIdTecnicoIdUsuarioAndHoraIngresoBetween(Long tecnicoId, Date inicio, Date fin);
 Optional<OrdenMantenimiento> findTopByIdMotorIdMotorOrderByHoraIngresoDesc(Long equipoId);
 Long countByIdMotorIdMotor(Long equipoId);

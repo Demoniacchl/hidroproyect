@@ -57,7 +57,7 @@ public class OrdenMantenimientoService {
         ordenMantenimiento.setHoraSalida(ordenMantenimientoDetails.getHoraSalida());
         ordenMantenimiento.setObservaciones(ordenMantenimientoDetails.getObservaciones());
         ordenMantenimiento.setFirmaCliente(ordenMantenimientoDetails.getFirmaCliente());
-        ordenMantenimiento.setCampoAdicionalA(ordenMantenimientoDetails.getCampoAdicionalA());
+        ordenMantenimiento.setCampoAdicional(ordenMantenimientoDetails.getCampoAdicional());
         
         // Actualizar lecturas eléctricas
         ordenMantenimiento.setR(ordenMantenimientoDetails.getR());
@@ -66,11 +66,11 @@ public class OrdenMantenimientoService {
         ordenMantenimiento.setVoltaje(ordenMantenimientoDetails.getVoltaje());
         
         // Actualizar relaciones
-        if (ordenMantenimientoDetails.getIdMotor() != null) {
-            ordenMantenimiento.setIdMotor(ordenMantenimientoDetails.getIdMotor());
+        if (ordenMantenimientoDetails.getMotor() != null) {
+            ordenMantenimiento.setMotor(ordenMantenimientoDetails.getMotor());
         }
-        if (ordenMantenimientoDetails.getIdTecnico() != null) {
-            ordenMantenimiento.setIdTecnico(ordenMantenimientoDetails.getIdTecnico());
+        if (ordenMantenimientoDetails.getTecnico() != null) {
+            ordenMantenimiento.setTecnico(ordenMantenimientoDetails.getTecnico());
         }
         
         return ordenMantenimientoRepository.save(ordenMantenimiento);
@@ -90,8 +90,8 @@ public class OrdenMantenimientoService {
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         
         OrdenMantenimiento orden = new OrdenMantenimiento();
-        orden.setIdMotor(equipo);
-        orden.setIdTecnico(tecnico);
+        orden.setMotor(equipo);
+        orden.setTecnico(tecnico);
         
         // Convertir LocalDateTime a Date
         Date horaingresoDate = java.sql.Timestamp.valueOf(ordenInicio.getHoraIngreso());
@@ -111,89 +111,89 @@ public class OrdenMantenimientoService {
         orden.setCampoAdicional(finalizacion.getCampoAdicional());
         orden.setFirmaCliente(finalizacion.getFirmaCliente());
         
-        // MAPEAR LOS 20 CAMPOS DEL CHECKLIST COMPLETOS
+        // MAPEAR LOS 20 CAMPOS DEL CHECKLIST CON NOMBRES EXACTOS DE TU ENTIDAD
         if (finalizacion.getChecklist() != null) {
             Map<String, String> checklist = finalizacion.getChecklist();
             
-            // 1. Rodamiento
+            // 1. Cambio rodamiento
             String rodamiento = checklist.getOrDefault("cambioRodamientos", "NO");
-            orden.setChecklist01Rodamiento(com.hidro.manh.enums.EstadoMantenimiento.valueOf(rodamiento));
+            orden.setCambioRodamientos(com.hidro.manh.enums.EstadoMantenimiento.valueOf(rodamiento));
             
-            // 2. Sello
+            // 2. Cambio sello
             String sello = checklist.getOrDefault("cambioSello", "NO");
-            orden.setChecklist02Sello(com.hidro.manh.enums.EstadoMantenimiento.valueOf(sello));
+            orden.setCambioSello(com.hidro.manh.enums.EstadoMantenimiento.valueOf(sello));
             
-            // 3. Voluta
+            // 3. Cambio voluta
             String voluta = checklist.getOrDefault("cambioVoluta", "NO");
-            orden.setChecklist03Voluta(com.hidro.manh.enums.EstadoMantenimiento.valueOf(voluta));
+            orden.setCambioVoluta(com.hidro.manh.enums.EstadoMantenimiento.valueOf(voluta));
             
-            // 4. Rebobinado campos
+            // 4. Rebobino campos
             String rebobinado = checklist.getOrDefault("rebobinoCampos", "NO");
-            orden.setChecklist04RebobinadoCampos(com.hidro.manh.enums.EstadoMantenimiento.valueOf(rebobinado));
+            orden.setRebobinoCampos(com.hidro.manh.enums.EstadoMantenimiento.valueOf(rebobinado));
             
             // 5. Protecciones saltadas
             String proteccionesSaltadas = checklist.getOrDefault("proteccionesSaltadas", "NO");
-            orden.setChecklist05ProteccionesSaltadas(com.hidro.manh.enums.EstadoMantenimiento.valueOf(proteccionesSaltadas));
+            orden.setProteccionesSaltadas(com.hidro.manh.enums.EstadoMantenimiento.valueOf(proteccionesSaltadas));
             
             // 6. Cambio protecciones
             String cambioProtecciones = checklist.getOrDefault("cambioProtecciones", "NO");
-            orden.setChecklist06CambioProtecciones(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioProtecciones));
+            orden.setCambioProtecciones(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioProtecciones));
             
             // 7. Contactores quemados
             String contactoresQuemados = checklist.getOrDefault("contactoresQuemados", "NO");
-            orden.setChecklist07ContactoresQuemados(com.hidro.manh.enums.EstadoMantenimiento.valueOf(contactoresQuemados));
+            orden.setContactoresQuemados(com.hidro.manh.enums.EstadoMantenimiento.valueOf(contactoresQuemados));
             
             // 8. Cambio contactores
             String cambioContactores = checklist.getOrDefault("cambioContactores", "NO");
-            orden.setChecklist08CambioContactores(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioContactores));
+            orden.setCambioContactores(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioContactores));
             
             // 9. Cambio luces piloto
             String cambioLucesPiloto = checklist.getOrDefault("cambioLucesPiloto", "NO");
-            orden.setChecklist09CambioLucesPiloto(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioLucesPiloto));
+            orden.setCambioLucesPiloto(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioLucesPiloto));
             
-            // 10. Limpieza tablero
+            // 10. Limpio tablero
             String limpiezaTablero = checklist.getOrDefault("limpioTablero", "NO");
-            orden.setChecklist10LimpiezaTablero(com.hidro.manh.enums.EstadoMantenimiento.valueOf(limpiezaTablero));
+            orden.setLimpioTablero(com.hidro.manh.enums.EstadoMantenimiento.valueOf(limpiezaTablero));
             
             // 11. Cambio presostato
             String cambioPresostato = checklist.getOrDefault("cambioPresostato", "NO");
-            orden.setChecklist11CambioPresostato(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioPresostato));
+            orden.setCambioPresostato(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioPresostato));
             
-            // 12. Cambio manómetro
+            // 12. Cambio manometro
             String cambioManometro = checklist.getOrDefault("cambioManometro", "NO");
-            orden.setChecklist12CambioManometro(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioManometro));
+            orden.setCambioManometro(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioManometro));
             
-            // 13. Carga con aire E.P.
+            // 13. Cargo con aire EP
             String cargaAireEp = checklist.getOrDefault("cargoConAireEp", "NO");
-            orden.setChecklist13CargaConAireEp(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cargaAireEp));
+            orden.setCargoConAireEp(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cargaAireEp));
             
-            // 14. Revisión presión E.P.
+            // 14. Reviso presion EP
             String revisionPresionEp = checklist.getOrDefault("revisoPresionEp", "NO");
-            orden.setChecklist14RevisionPresionEp(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionPresionEp));
+            orden.setRevisoPresionEp(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionPresionEp));
             
-            // 15. Cambio válvula retención
+            // 15. Cambio valv retencion
             String cambioValvulaRetencion = checklist.getOrDefault("cambioValvRetencion", "NO");
-            orden.setChecklist15CambioValvRetencion(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioValvulaRetencion));
+            orden.setCambioValvRetencion(com.hidro.manh.enums.EstadoMantenimiento.valueOf(cambioValvulaRetencion));
             
-            // 16. Suprimir filtración
+            // 16. Suprimo filtracion
             String suprimirFiltracion = checklist.getOrDefault("suprimoFiltracion", "NO");
-            orden.setChecklist16SuprimirFiltracion(com.hidro.manh.enums.EstadoMantenimiento.valueOf(suprimirFiltracion));
+            orden.setSuprimoFiltracion(com.hidro.manh.enums.EstadoMantenimiento.valueOf(suprimirFiltracion));
             
-            // 17. Revisión válvula compuerta
+            // 17. Reviso valv compuerta
             String revisionValvCompuerta = checklist.getOrDefault("revisoValvCompuerta", "NO");
-            orden.setChecklist17RevisionValvCompuerta(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionValvCompuerta));
+            orden.setRevisoValvCompuerta(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionValvCompuerta));
             
-            // 18. Revisión válvula flotador
+            // 18. Reviso valv flotador
             String revisionValvFlotador = checklist.getOrDefault("revisoValvFlotador", "NO");
-            orden.setChecklist18RevisionValvFlotador(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionValvFlotador));
+            orden.setRevisoValvFlotador(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionValvFlotador));
             
-            // 19. Revisión estanque agua
+            // 19. Reviso estanque agua
             String revisionEstanqueAgua = checklist.getOrDefault("revisoEstanqueAgua", "NO");
-            orden.setChecklist19RevisionEstanqueAgua(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionEstanqueAgua));
+            orden.setRevisoEstanqueAgua(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionEstanqueAgua));
             
-            // 20. Revisión fittings otros
+            // 20. Reviso fittings otros
             String revisionFittingsOtros = checklist.getOrDefault("revisoFittingsOtros", "NO");
-            orden.setChecklist20RevisionFittingsOtros(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionFittingsOtros));
+            orden.setRevisoFittingsOtros(com.hidro.manh.enums.EstadoMantenimiento.valueOf(revisionFittingsOtros));
         }
         
         // Lecturas eléctricas - convertir Double a BigDecimal
@@ -234,8 +234,8 @@ public class OrdenMantenimientoService {
     }
 
     // MÉTODOS ADICIONALES
-    public List<OrdenMantenimiento> findByEquipoId(Long equipoId) {
-        return ordenMantenimientoRepository.findByIdMotorIdMotor(equipoId);
+    public Optional<OrdenMantenimiento> findByEquipoId(Long equipoId) {
+        return ordenMantenimientoRepository.findById(equipoId);
     }
 
     public List<OrdenMantenimiento> findByFechaRange(Date fechaInicio, Date fechaFin) {

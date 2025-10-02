@@ -50,6 +50,6 @@ public List<OrdenReparacion> findByEstado(String estado) {
 }
 
 public List<OrdenReparacion> findByFechaAfter(LocalDateTime fecha) {
-    return repo.findByFechaAfter(fecha);
+    return repo.findByFechaAfter(java.sql.Date.valueOf(fecha.toLocalDate()));
 }
 }

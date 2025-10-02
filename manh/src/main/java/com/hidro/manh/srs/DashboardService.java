@@ -1,14 +1,13 @@
 package com.hidro.manh.srs;
 
-import com.hidro.manh.dto.DashboardEstadisticasDTO;
-import com.hidro.manh.dto.AlertaDTO;
-import com.hidro.manh.ety.*;
+import com.hidro.manh.enums.TipoEvento;
+
 import com.hidro.manh.rep.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,118 +23,77 @@ public class DashboardService {
     private EquipoMotorRepository equipoMotorRepository;
 
     @Autowired
-    private OrdenMantenimientoRepository ordenMantenimientoRepository;
-
-    @Autowired
     private OrdenReparacionRepository ordenReparacionRepository;
 
     @Autowired
     private SolicitudRepository solicitudRepository;
-
+    
+    @Autowired
+    private OrdenMantenimientoRepository ordenMantenimientoRepository;
+    
     @Autowired
     private CalendarioRepository calendarioRepository;
-
-    public DashboardEstadisticasDTO getEstadisticas() {
-        DashboardEstadisticasDTO estadisticas = new DashboardEstadisticasDTO();
-        
-        // Estadísticas básicas
-        estadisticas.setTotalClientes(clienteRepository.count());
-        estadisticas.setTotalEquipos(equipoMotorRepository.count());
-        
-        // Convertir LocalDateTime a Date para las consultas
-        java.util.Date inicioMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0));
-        java.util.Date finMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59));
-        
-        // Mantenciones y reparaciones este mes
-        Long mantencionesMes = ordenMantenimientoRepository.countByHoraIngresoBetween(inicioMes, finMes);
-        Long reparacionesMes = ordenReparacionRepository.countByFechaBetween(inicioMes, finMes);
-        
-        estadisticas.setMantencionesEsteMes(mantencionesMes);
-        estadisticas.setReparacionesEsteMes(reparacionesMes);
-        
-        // Solicitudes pendientes
-        Long solicitudesPendientes = solicitudRepository.countByEstado("PENDIENTE");
-        estadisticas.setSolicitudesPendientes(solicitudesPendientes);
-        
-        // Alertas activas (próximos eventos no notificados)
-        Long alertasActivas = calendarioRepository.countByNotificadoFalseAndFechaInicioAfter(LocalDateTime.now());
-        estadisticas.setAlertasActivas(alertasActivas);
-        
-        return estadisticas;
-    }
-
-    public List<AlertaDTO> getAlertas() {
-        List<AlertaDTO> alertas = new ArrayList<>();
-        
-        // Alertas de eventos próximos (24 horas)
-        LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime en24Horas = ahora.plusHours(24);
-        
-        List<Calendario> eventosProximos = calendarioRepository.findByNotificadoFalseAndFechaInicioBetween(ahora, en24Horas);
-        
-        for (Calendario evento : eventosProximos) {
-            AlertaDTO alerta = new AlertaDTO();
-            alerta.setTipo("EVENTO_PROXIMO");
-            alerta.setTitulo("Evento Programado: " + evento.getTipoEvento());
-            alerta.setDescripcion(evento.getTitulo() + " - " + evento.getDescripcion());
-            alerta.setIdCliente(evento.getCliente().getIdCliente());
-            alerta.setNombreCliente(evento.getCliente().getNombre1());
-            alerta.setFechaGeneracion(LocalDateTime.now());
-            alerta.setLeida(false);
-            
-            if (evento.getEquipo() != null) {
-                alerta.setIdEquipo(evento.getEquipo().getIdMotor());
-                alerta.setNombreEquipo(evento.getEquipo().getMarca() + " " + evento.getEquipo().getModelo());
-            }
-            
-            alertas.add(alerta);
+    
+    // Método corregido para contar solicitudes por estado
+    public List<Map<String, Object>> getSolicitudesPorEstado() {
+        try {
+            List<Map<String, Object>> resultados = solicitudRepository.countByEstadoSolicitud()
+                .stream()
+                .map(result -> {
+                    Map<String, Object> map = new HashMap<>();
+                    // Convertir el enum EstadoSolicitud a String
+                    if (result.get("estado") instanceof Enum) {
+                        map.put("estado", ((Enum<?>) result.get("estado")).name());
+                    } else {
+                        map.put("estado", result.get("estado").toString());
+                    }
+                    map.put("count", result.get("count"));
+                    return map;
+                })
+                .collect(Collectors.toList());
+            return resultados;
+        } catch (Exception e) {
+            // Fallback si hay problemas con la consulta
+            return getSolicitudesPorEstadoFallback();
         }
-        
-        return alertas;
     }
-
-    public List<Map<String, Object>> getProximasMantenciones() {
-        LocalDateTime ahora = LocalDateTime.now();
-        List<Calendario> proximasMantenciones = calendarioRepository.findByTipoEventoAndFechaInicioAfter(
-            com.hidro.manh.enums.TipoEvento.MANTENCION, ahora);
+    
+    // Método fallback alternativo
+    private List<Map<String, Object>> getSolicitudesPorEstadoFallback() {
+        Map<String, Long> counts = solicitudRepository.findAll()
+            .stream()
+            .collect(Collectors.groupingBy(
+                solicitud -> solicitud.getEstado().name(),
+                Collectors.counting()
+            ));
         
-        return proximasMantenciones.stream()
-                .map(evento -> {
-                    Map<String, Object> mapa = new HashMap<>();
-                    mapa.put("id", evento.getIdCalendario());
-                    mapa.put("titulo", evento.getTitulo());
-                    mapa.put("cliente", evento.getCliente().getNombre1());
-                    mapa.put("fecha", evento.getFechaInicio());
-                    mapa.put("tecnico", evento.getTecnico() != null ? evento.getTecnico().getNombre() : "Sin asignar");
-                    return mapa;
-                })
-                .collect(Collectors.toList());
+        return counts.entrySet()
+            .stream()
+            .map(entry -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("estado", entry.getKey());
+                map.put("count", entry.getValue());
+                return map;
+            })
+            .collect(Collectors.toList());
     }
-
-    public List<Map<String, Object>> getOrdenesPendientes() {
-        List<OrdenMantenimiento> ordenesPendientes = ordenMantenimientoRepository.findByHoraSalidaIsNull();
-        
-        return ordenesPendientes.stream()
-                .map(orden -> {
-                    Map<String, Object> mapa = new HashMap<>();
-                    mapa.put("id", orden.getIdOrden());
-                    
-                    // Usar getIdMotor() en lugar de getEquipo()
-                    if (orden.getMotor() != null) {
-                        mapa.put("equipo", orden.getMotor().getMarca() + " " + orden.getMotor().getModelo());
-                        if (orden.getMotor().getUbicacion() != null && orden.getMotor().getUbicacion().getCliente() != null) {
-                            mapa.put("cliente", orden.getMotor().getUbicacion().getCliente().getNombre1());
-                        }
-                    }
-                    
-                    if (orden.getIdTecnico() != null) {
-                        mapa.put("tecnico", orden.getIdTecnico().getNombre());
-                    }
-                    
-                    mapa.put("horaIngreso", orden.getHoraIngreso());
-                    
-                    return mapa;
-                })
-                .collect(Collectors.toList());
+    
+    // Otros métodos del dashboard que también podrían tener problemas similares
+    public List<Map<String, Object>> getEventosProximos() {
+        return calendarioRepository.findByTipoEventoAndFechaInicioAfter(
+                TipoEvento.MANTENCION, 
+                LocalDateTime.now()
+            )
+            .stream()
+            .map(evento -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", evento.getIdCalendario());
+                map.put("titulo", evento.getTitulo());
+                map.put("tipoEvento", evento.getTipoEvento().name()); // Convertir enum a String
+                map.put("fechaInicio", evento.getFechaInicio());
+                map.put("cliente", evento.getCliente().getNombre1());
+                return map;
+            })
+            .collect(Collectors.toList());
     }
 }

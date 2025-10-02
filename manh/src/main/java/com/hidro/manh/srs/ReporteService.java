@@ -29,7 +29,7 @@ public class ReporteService {
     private EquipoMotorRepository equipoMotorRepository;
 
     public List<Map<String, Object>> generarReporteMantenciones(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
-        // Convertir LocalDateTime a Date
+        // Convertir LocalDateTime a Date - CORREGIDO
         java.util.Date inicio = java.sql.Timestamp.valueOf(fechaInicio);
         java.util.Date fin = java.sql.Timestamp.valueOf(fechaFin);
         
@@ -42,7 +42,7 @@ public class ReporteService {
                     reporteItem.put("fecha", mantencion.getHoraIngreso());
                     reporteItem.put("tipo", "MANTENCION");
                     
-                    // Usar getIdMotor() en lugar de getEquipo()
+                    // CORREGIDO: Usar getIdMotor() correctamente
                     if (mantencion.getMotor() != null) {
                         reporteItem.put("equipo", mantencion.getMotor().getMarca() + " " + mantencion.getMotor().getModelo());
                         if (mantencion.getMotor().getUbicacion() != null && mantencion.getMotor().getUbicacion().getCliente() != null) {
@@ -54,7 +54,7 @@ public class ReporteService {
                         reporteItem.put("tecnico", mantencion.getTecnico().getNombre());
                     }
                     
-                    // Calcular duración
+                    // Calcular duración - CORREGIDO
                     if (mantencion.getHoraSalida() != null) {
                         Duration duracion = Duration.between(
                             mantencion.getHoraIngreso().toInstant(), 
@@ -82,7 +82,7 @@ public class ReporteService {
                     reporteItem.put("contacto", cliente.getTelefono1());
                     reporteItem.put("correo", cliente.getCorreo());
                     
-                    // Estadísticas del cliente
+                    // Estadísticas del cliente - CORREGIDAS
                     Long totalEquipos = equipoMotorRepository.countByUbicacionClienteIdCliente(cliente.getIdCliente());
                     Long totalMantenciones = ordenMantenimientoRepository.countByIdMotorUbicacionClienteIdCliente(cliente.getIdCliente());
                     
@@ -95,7 +95,7 @@ public class ReporteService {
     }
 
     public List<Map<String, Object>> generarReporteTecnicos() {
-        // Buscar técnicos por rol
+        // Buscar técnicos por rol - CORREGIDO
         List<Usuario> tecnicos = usuarioRepository.findByRol(RolUsuario.TECNICO);
         
         return tecnicos.stream()
@@ -105,10 +105,10 @@ public class ReporteService {
                     reporteItem.put("nombre", tecnico.getNombre());
                     reporteItem.put("usuario", tecnico.getUsuario());
                     
-                    // Estadísticas del técnico
+                    // Estadísticas del técnico - CORREGIDAS
                     Long totalMantenciones = ordenMantenimientoRepository.countByIdTecnicoIdUsuario(tecnico.getIdUsuario());
                     
-                    // Mantenciones este mes
+                    // Mantenciones este mes - CORREGIDAS
                     java.util.Date inicioMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0));
                     java.util.Date finMes = java.sql.Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().maxLength()).withHour(23).withMinute(59).withSecond(59));
                     
@@ -138,11 +138,11 @@ public class ReporteService {
                     reporteItem.put("cliente", equipo.getUbicacion().getCliente().getNombre1());
                     reporteItem.put("estado", equipo.getEstado());
                     
-                    // Estadísticas del equipo
+                    // Estadísticas del equipo - CORREGIDAS
                     Long totalMantenciones = ordenMantenimientoRepository.countByIdMotorIdMotor(equipo.getIdMotor());
                     reporteItem.put("totalMantenciones", totalMantenciones);
                     
-                    // Última mantención
+                    // Última mantención - CORREGIDA
                     ordenMantenimientoRepository
                         .findTopByIdMotorIdMotorOrderByHoraIngresoDesc(equipo.getIdMotor())
                         .ifPresentOrElse(
