@@ -1,6 +1,7 @@
 package com.hidro.manh.srs;
 
 import com.hidro.manh.dto.OrdenInicioDTO;
+import com.hidro.manh.dto.OrdenMantenimientoDto;
 import com.hidro.manh.dto.OrdenFinalizacionDTO;
 import com.hidro.manh.ety.OrdenMantenimiento;
 import com.hidro.manh.ety.EquipoMotor;
@@ -34,7 +35,45 @@ public class OrdenMantenimientoService {
 
     @Autowired
     private OrdenReparacionRepository ordenReparacionRepository;
-
+ public List<OrdenMantenimiento> getAll() {
+        return ordenMantenimientoRepository.findAll();
+    }
+    
+    public Optional<OrdenMantenimiento> getById(Long id) {
+        return ordenMantenimientoRepository.findById(id);
+    }
+    
+    // Removed duplicate save(OrdenMantenimiento orden) method to fix compilation error.
+    |
+    public void delete(Long id) {
+        ordenMantenimientoRepository.deleteById(id);
+    }
+    
+    // Método para convertir DTO a Entity
+    public OrdenMantenimiento convertToEntity(OrdenMantenimientoDto dto) {
+        OrdenMantenimiento entity = new OrdenMantenimiento();
+        
+        // Mapear campos básicos
+        entity.setId(dto.getId());
+        entity.setObservaciones(dto.getObservaciones());
+        entity.setHoraIngreso(dto.getHoraIngreso());
+        entity.setHoraSalida(dto.getHoraSalida());
+        
+        // Mapear checklist
+        entity.setCambioRodamientos(dto.getCambioRodamientos());
+        entity.setChecklist02Sello(dto.getChecklist02Sello());
+        // ... continuar con todos los campos del checklist
+        
+        // Mapear lecturas eléctricas
+        entity.setM1(dto.getM1());
+        entity.setR1(dto.getR1());
+        entity.setS1(dto.getS1());
+        entity.setT1(dto.getT1());
+        entity.setVoltaje10(dto.getVoltaje10());
+        // ... continuar con todas las lecturas
+        
+        return entity;
+    }
     // MÉTODOS CRUD BÁSICOS
     public List<OrdenMantenimiento> findAll() {
         return ordenMantenimientoRepository.findAll();

@@ -1,5 +1,6 @@
 package com.hidro.manh.srs;
 
+import com.hidro.manh.enums.TipoEvento;
 import com.hidro.manh.ety.Calendario;
 import com.hidro.manh.ety.Cliente;
 import com.hidro.manh.ety.OrdenMantenimiento;
@@ -24,7 +25,21 @@ public class CalendarioService {
     
     @Autowired
     private OrdenMantenimientoRepository ordenMantenimientoRepository;
-
+    // Método faltante
+    public void crearEventoMantenciónProgramada(Long clienteId, LocalDateTime fecha) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+            .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        
+        Calendario evento = new Calendario();
+        evento.setTitulo("Mantención Programada - " + cliente.getN_cliente());
+        evento.setTipoEvento(TipoEvento.MANTENCION);
+        evento.setFechaInicio(fecha);
+        evento.setFechaFin(fecha.plusHours(2)); // Duración estimada 2 horas
+        evento.setCliente(cliente);
+        evento.setDescripcion("Mantención programada para el cliente");
+        
+        calendarioRepository.save(evento);
+    }
     // MÉTODOS BÁSICOS (mantener solo estos por ahora)
     public List<Calendario> findAll() {
         return calendarioRepository.findAll();

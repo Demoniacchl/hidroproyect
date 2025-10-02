@@ -1,5 +1,6 @@
 package com.hidro.manh.srs;
 
+import com.hidro.manh.enums.EstadoSolicitud;
 import com.hidro.manh.enums.TipoEvento;
 
 import com.hidro.manh.rep.*;
@@ -7,8 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,7 +35,36 @@ public class DashboardService {
     
     @Autowired
     private CalendarioRepository calendarioRepository;
+    @Service
+public class DashboardService {
     
+    @Autowired
+    private SolicitudRepository solicitudRepository;
+    
+    @Autowired
+    private OrdenMantenimientoRepository ordenMantenimientoRepository;
+
+    // Métodos faltantes para el Dashboard
+    public Long getTotalSolicitudes() {
+        return solicitudRepository.count();
+    }
+    
+    public Long getSolicitudesPendientes() {
+        return solicitudRepository.countByEstado(EstadoSolicitud.PENDIENTE);
+    }
+    
+    public Long getMantencionesEsteMes() {
+        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().length(LocalDateTime.now().toLocalDate().isLeapYear())).withHour(23).withMinute(59).withSecond(59);
+        
+        return ordenMantenimientoRepository.countByFechaBetween(
+            Date.from(startOfMonth.atZone(ZoneId.systemDefault()).toInstant()),
+            Date.from(endOfMonth.atZone(ZoneId.systemDefault()).toInstant())
+        );
+    }
+    
+    // Si necesitas métodos adicionales en el repository:
+}
     // Método corregido para contar solicitudes por estado
     public List<Map<String, Object>> getSolicitudesPorEstado() {
         try {
@@ -57,7 +88,23 @@ public class DashboardService {
             return getSolicitudesPorEstadoFallback();
         }
     }
+      public Long getTotalSolicitudes() {
+        return solicitudRepository.count();
+    }
     
+    public Long getSolicitudesPendientes() {
+        return solicitudRepository.countByEstado(EstadoSolicitud.PENDIENTE);
+    }
+    
+    public Long getMantencionesEsteMes() {
+        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().length(LocalDateTime.now().toLocalDate().isLeapYear())).withHour(23).withMinute(59).withSecond(59);
+        
+        return ordenMantenimientoRepository.countByFechaBetween(
+            Date.from(startOfMonth.atZone(ZoneId.systemDefault()).toInstant()),
+            Date.from(endOfMonth.atZone(ZoneId.systemDefault()).toInstant())
+        );
+    }
     // Método fallback alternativo
     private List<Map<String, Object>> getSolicitudesPorEstadoFallback() {
         Map<String, Long> counts = solicitudRepository.findAll()

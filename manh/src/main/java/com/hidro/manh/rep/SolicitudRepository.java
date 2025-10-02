@@ -13,8 +13,7 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
     // Agregar estos métodos a tu SolicitudRepository.java existente
 
 List<Solicitud> findByEstado(String estado);
-Long countByEstado(String estado);
-
+Long countByEstado(EstadoSolicitud estado);
     @Query("SELECT new map(s.estado as estado, COUNT(s) as count) FROM Solicitud s GROUP BY s.estado")
     List<Map<String, Object>> countByEstadoSolicitud();
     
