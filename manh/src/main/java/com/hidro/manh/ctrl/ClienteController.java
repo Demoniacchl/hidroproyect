@@ -22,13 +22,13 @@ public class ClienteController {
     public Page<Cliente> getAllClientes(Pageable pageable) {
         return clienteService.getAllClientes(pageable);
     }
-    // Buscar cliente por número de cliente
-@GetMapping("/numero/{ncliente}")
-public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer ncliente) {
-    Optional<Cliente> cliente = clienteService.findByNcliente(ncliente); 
-    return cliente.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-}
-    // Filtrar clientes por región
+//     // Buscar cliente por número de cliente
+// @GetMapping("/numero/{ncliente}")
+// public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer ncliente) {
+//     Optional<Cliente> cliente = clienteService.findByNcliente(ncliente); 
+//     return cliente.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+// }
+//     // Filtrar clientes por región
     @GetMapping("/region/{regionId}")
     public Page<Cliente> getClientesByRegion(@PathVariable Integer regionId, Pageable pageable) {
         return clienteService.getClientesByRegion(regionId, pageable);

@@ -1,3 +1,4 @@
+// src/components/auth/LoginForm/LoginForm.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -29,28 +30,49 @@ const LoginForm: React.FC = () => {
     setError('');
 
     try {
+      console.log('🔄 LoginForm: Iniciando submit...');
+      
       const springCredentials = {
         username: formData.usuario,
         password: formData.contrasena
       };
       
-      const userData = await authService.login(springCredentials);
-      await login(formData.usuario, formData.contrasena);
+      console.log('📤 Credenciales enviadas:', springCredentials);
       
-      switch (userData.rol) {
-        case 'SUPER_ADMIN':
-          navigate('/super-admin');
-          break;
-        case 'ADMIN':
-          navigate('/admin');
-          break;
-        case 'TECNICO':
-          navigate('/tecnico');
-          break;
-        default:
-          navigate('/dashboard');
+      // ✅ PASO 1: Probar authService directamente
+      console.log('🔐 Probando authService directamente...');
+      const userData = await authService.login(springCredentials);
+      console.log('✅ authService respuesta:', userData);
+      
+      // ✅ PASO 2: Usar AuthContext para guardar token
+      console.log('🔄 Llamando a login() del AuthContext...');
+      const success = await login(formData.usuario, formData.contrasena);
+      console.log('✅ Resultado de AuthContext login():', success);
+      
+      if (success) {
+        console.log('🎯 Login EXITOSO, redirigiendo...');
+        console.log('🔍 Token en localStorage:', localStorage.getItem('token'));
+        console.log('🔍 User en localStorage:', localStorage.getItem('user'));
+        
+        switch (userData.rol) {
+          case 'SUPER_ADMIN':
+            navigate('/super-admin');
+            break;
+          case 'ADMIN':
+            navigate('/admin');
+            break;
+          case 'TECNICO':
+            navigate('/tecnico');
+            break;
+          default:
+            navigate('/dashboard');
+        }
+      } else {
+        console.log('❌ AuthContext login() devolvió false');
+        setError('Error en autenticación - AuthContext falló');
       }
     } catch (err: any) {
+      console.error('💥 ERROR capturado en LoginForm:', err);
       setError(err.message || 'Credenciales inválidas. Por favor intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -61,7 +83,7 @@ const LoginForm: React.FC = () => {
     <div className="login-container">
       <div className="login-box">
         <div className="login-header">
-          <h1>Hidrohiguiene</h1>
+          <h1>Hidrohigiene</h1>
           <br></br>
           <p>Ingresa tus credenciales</p>
         </div>
@@ -105,7 +127,6 @@ const LoginForm: React.FC = () => {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
-
       </div>
     </div>
   );

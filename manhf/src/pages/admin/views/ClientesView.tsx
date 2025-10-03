@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useClientes } from '../../../hooks/useClientes';
 import { ClienteList } from '../../../components/ClientesList';
-import { ClienteCreateRequest } from '../../../services/clientes.service';
+import type { ClienteCreateRequest } from '../../../services/clientes.service';
 
 const ClientesView: React.FC = () => {
   const { 

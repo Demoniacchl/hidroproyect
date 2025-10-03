@@ -1,8 +1,9 @@
 // src/context/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { authService } from '../services/auth.service';
 
 interface User {
-  id: number;
+  id?: number;
   nombre: string;
   usuario: string;
   rol: 'ADMIN' | 'TECNICO' | 'SUPER_ADMIN';
@@ -18,7 +19,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 👇 Cambia ReactNode por React.ReactNode
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (token && userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        console.log('🔄 Usuario cargado desde localStorage:', parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('token');
@@ -41,24 +43,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const users = {
-        'admin': { id: 1, nombre: 'Administrador', rol: 'ADMIN' as const },
-        'tecnico': { id: 2, nombre: 'Técnico', rol: 'TECNICO' as const },
-        'superadmin': { id: 3, nombre: 'Super Admin', rol: 'SUPER_ADMIN' as const }
-      };
-
-      if (users[username as keyof typeof users] && password === 'password') {
-        const userData = users[username as keyof typeof users];
-        const user = { ...userData, usuario: username };
-        
-        setUser(user);
-        localStorage.setItem('token', 'fake-jwt-token');
-        localStorage.setItem('user', JSON.stringify(user));
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
+      console.log('🔐 Iniciando login...', { username });
+      
+      // ✅ PASO 1: Obtener token y datos del backend
+      const userData = await authService.login({ username, password });
+      console.log('✅ Datos recibidos del login:', userData);
+      
+      // ✅ PASO 2: Guardar token para futuras peticiones
+      localStorage.setItem('token', userData.token);
+      localStorage.setItem('user', JSON.stringify({
+        nombre: userData.nombre,
+        usuario: userData.usuario,
+        rol: userData.rol
+      }));
+      
+      setUser({
+        nombre: userData.nombre,
+        usuario: userData.usuario,
+        rol: userData.rol
+      });
+      
+      console.log('✅ Login EXITOSO - Token guardado:', userData.token);
+      return true;
+      
+    } catch (error: any) {
+      console.error('❌ ERROR en login:', error.message);
       return false;
     }
   };
@@ -67,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    console.log('🚪 Sesión cerrada');
   };
 
   const value = {
@@ -91,4 +101,3 @@ export const useAuth = () => {
   }
   return context;
 };
-export default AuthContext;

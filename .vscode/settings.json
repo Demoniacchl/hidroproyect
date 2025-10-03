@@ -11,5 +11,6 @@
         }
     ],
     "java.configuration.defaultRuntime": "JavaSE-17",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.debug.settings.onBuildFailureProceed": true
 }

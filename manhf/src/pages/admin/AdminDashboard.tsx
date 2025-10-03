@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { AuthProvider, useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/layout/Sidebar/Sidebar';
 import './AdminDashboard.css';
 

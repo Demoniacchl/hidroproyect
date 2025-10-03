@@ -1,36 +1,72 @@
 // src/services/api.ts
 const BASE_URL = 'http://localhost:8080/api';
 
+// ✅ Cliente SIN autenticación para login
+export const httpClient = {
+  async request(endpoint: string, options: RequestInit = {}) {
+    const url = `${BASE_URL}${endpoint}`;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    console.log('🌐 Haciendo request SIN token a:', url);
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error del servidor:', errorText);
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('🚨 Error en HTTP request:', error);
+      throw error;
+    }
+  },
+
+  post(endpoint: string, data: any) {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+};
+
+// ✅ Cliente CON autenticación para APIs protegidas
 export const apiClient = {
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${BASE_URL}${endpoint}`;
     
-    // Obtener token REAL del localStorage
     const token = localStorage.getItem('token');
     
-    // Si no hay token, redirigir al login
-    if (!token) {
-      console.warn('⚠️ No hay token JWT, redirigiendo al login...');
-      window.location.href = '/login';
+    // ✅ SOLO para endpoints protegidos, NO para login
+    if (!token && !endpoint.includes('/auth/')) {
+      console.warn('⚠️ No hay token JWT');
       throw new Error('No autenticado');
     }
 
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ← Token REAL
+        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
       ...options,
     };
 
-    console.log('🌐 Haciendo request a:', url);
-    console.log('🔐 Token REAL usado:', token.substring(0, 20) + '...');
+    console.log('🔐 Haciendo request a:', url, token ? 'CON token' : 'SIN token');
 
     try {
       const response = await fetch(url, config);
       
-      // Si el token expiró o es inválido
       if (response.status === 401) {
         console.error('❌ Token inválido o expirado');
         localStorage.removeItem('token');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../../context/AuthContext';
+import { AuthProvider, useAuth } from '../../../context/AuthContext';
 import './Sidebar.css';
 
 interface SidebarProps {

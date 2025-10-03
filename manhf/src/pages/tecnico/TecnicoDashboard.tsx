@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { AuthProvider, useAuth } from '../../context/AuthContext';
 
 const TecnicoDashboard: React.FC = () => {
   const { user, logout } = useAuth();

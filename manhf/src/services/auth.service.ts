@@ -1,21 +1,24 @@
-import { apiClient } from './api';
-import { User } from '../context/AuthContext';
+// src/services/auth.service.ts
+import { httpClient, apiClient } from './api';
 
-export interface LoginFormData {
-  usuario: string;
-  contrasena: string;
-}
-
-export interface SpringLoginRequest {
+export interface LoginCredentials {
   username: string;
   password: string;
 }
 
 export interface LoginResponse {
   token: string;
+  type: string;
+  username: string;
+  rol: string;
+  nombre: string;
+}
+
+export interface User {
   usuario: string;
   rol: string;
   nombre: string;
+  token: string;
 }
 
 export const authService = {
@@ -23,25 +26,20 @@ export const authService = {
     try {
       console.log('🔐 Intentando login con:', credentials);
       
-      // Spring Security espera credentials en formato específico
-      const springCredentials = {
-        username: credentials.username,
-        password: credentials.password
-      };
+      // ✅ PASO 1: Login SIN token usando httpClient
+      const response: LoginResponse = await httpClient.post('/auth/login', credentials);
       
-      const response: LoginResponse = await apiClient.post('/auth/login', springCredentials);
+      console.log('✅ Respuesta REAL del backend:', response);
       
-      console.log('✅ Login exitoso:', response);
-      
+      // ✅ PASO 2: Devolver datos mapeados correctamente
       return {
-        usuario: response.usuario,
+        usuario: response.username,  // ← CORREGIDO: username → usuario
         rol: response.rol,
         nombre: response.nombre,
-        token: response.token
+        token: response.token  // ← Esto se usará en AuthContext
       };
     } catch (error: any) {
       console.error('❌ Error en login:', error);
-      
       const errorMessage = error.message || 'Error de conexión con el servidor';
       throw new Error(errorMessage);
     }
@@ -49,6 +47,7 @@ export const authService = {
 
   async validateToken(): Promise<boolean> {
     try {
+      // ✅ PASO 3: Validar token usando apiClient (CON token)
       await apiClient.get('/clientes?page=0&size=1');
       return true;
     } catch (error) {
@@ -59,5 +58,6 @@ export const authService = {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    console.log('🚪 Sesión cerrada - tokens eliminados');
   }
 };
