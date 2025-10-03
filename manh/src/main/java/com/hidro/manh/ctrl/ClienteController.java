@@ -23,11 +23,10 @@ public class ClienteController {
         return clienteService.getAllClientes(pageable);
     }
     // Buscar cliente por número de cliente
-@GetMapping("/numero/{nCliente}")
+@GetMapping("/numero/{ncliente}")
 public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer ncliente) {
     Optional<Cliente> cliente = clienteService.findByNcliente(ncliente); 
-    return cliente.map(ResponseEntity::ok)
-                 .orElse(ResponseEntity.notFound().build());
+    return cliente.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
 }
     // Filtrar clientes por región
     @GetMapping("/region/{regionId}")

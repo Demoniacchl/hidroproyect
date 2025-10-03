@@ -1,6 +1,17 @@
-// components/ClienteList.tsx
+// src/components/ClienteList.tsx
 import React from 'react';
-import { Cliente } from '../services/clientes.service';
+
+interface Cliente {
+  idCliente: number;
+  n_cliente: number;
+  nombre1: string;
+  nombre2?: string;
+  rut: string;
+  telefono1: string;
+  telefono2?: string;
+  correo: string;
+  observaciones?: string;
+}
 
 interface ClienteListProps {
   clientes: Cliente[];

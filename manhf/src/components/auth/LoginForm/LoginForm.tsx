@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../context/AuthContext';
 import { authService } from '../../../services/auth.service';
 import './LoginForm.css';
 
@@ -35,7 +35,7 @@ const LoginForm: React.FC = () => {
       };
       
       const userData = await authService.login(springCredentials);
-      login(userData);
+      await login(formData.usuario, formData.contrasena);
       
       switch (userData.rol) {
         case 'SUPER_ADMIN':

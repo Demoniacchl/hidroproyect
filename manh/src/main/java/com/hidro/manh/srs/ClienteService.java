@@ -35,6 +35,10 @@ public class ClienteService {
         return clienteRepository.findByIdWithUbicaciones(idCliente);
     }
 
+public Optional<Cliente> getClienteByNumero(Integer ncliente) {
+    return clienteRepository.findByNcliente(ncliente);
+}
+
     // Guardar o actualizar cliente
     public Cliente saveCliente(Cliente cliente) {
         return clienteRepository.save(cliente);
@@ -44,7 +48,5 @@ public class ClienteService {
     public void deleteCliente(Long idCliente) {
         clienteRepository.deleteById(idCliente);
     }
-        public Optional<Cliente> findByNcliente(Integer ncliente) {
-        return clienteRepository.findByNcliente(ncliente);
-    }
+
 }

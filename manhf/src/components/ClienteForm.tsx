@@ -97,3 +97,4 @@ export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmit, onC
     </div>
   );
 };
+export default ClienteForm;

@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+// src/context/AuthContext.tsx
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 interface User {
   id: number;
@@ -17,7 +18,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+// 👇 Cambia ReactNode por React.ReactNode
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      // Usuarios predefinidos según tu documentación
       const users = {
         'admin': { id: 1, nombre: 'Administrador', rol: 'ADMIN' as const },
         'tecnico': { id: 2, nombre: 'Técnico', rol: 'TECNICO' as const },
@@ -90,3 +91,4 @@ export const useAuth = () => {
   }
   return context;
 };
+export default AuthContext;

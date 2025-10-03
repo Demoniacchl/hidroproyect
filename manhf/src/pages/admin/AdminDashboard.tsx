@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/layout/Sidebar/Sidebar';
 import './AdminDashboard.css';
 
 // Importar vistas
-import DashboardView from './views/DashboardView';
+import DashboardView from './views/DashBoardView';
 import ClientesView from './views/ClientesView';
 import SolicitudesView from './views/SolicitudesView';
 import CalendarioView from './views/CalendarioView';

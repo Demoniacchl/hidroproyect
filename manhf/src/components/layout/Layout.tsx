@@ -1,6 +1,6 @@
-// components/Layout/Layout.tsx
+// src/components/Layout/Layout.tsx
 import React from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
@@ -16,6 +16,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
+  const getRoleColor = (rol: string) => {
+    switch (rol) {
+      case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800';
+      case 'ADMIN': return 'bg-blue-100 text-blue-800';
+      case 'TECNICO': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getRoleName = (rol: string) => {
+    switch (rol) {
+      case 'SUPER_ADMIN': return 'Super Administrador';
+      case 'ADMIN': return 'Administrador';
+      case 'TECNICO': return 'Técnico';
+      default: return rol;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-white shadow-sm border-b">
@@ -26,12 +44,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">Hola, {user?.nombre}</span>
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {user?.rol}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user?.rol || '')}`}>
+                {getRoleName(user?.rol || '')}
               </span>
               <button
                 onClick={handleLogout}
-                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-sm"
               >
                 Cerrar Sesión
               </button>

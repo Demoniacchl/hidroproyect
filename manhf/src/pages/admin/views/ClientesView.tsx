@@ -1,29 +1,28 @@
-// views/ClienteView.tsx
+// src/pages/admin/views/ClientesView.tsx
 import React, { useState } from 'react';
-import { useClientes } from '../hooks/useClientes';
-// Update the import path if the file is located elsewhere, for example:
-import { ClienteList } from '../components/ClienteList';
-// Or create the file at src/pages/admin/components/list/ClienteList.tsx if it does not exist.
-import { ClienteForm } from '../components/ClienteForm';
-import { Cliente } from '../services/clienteService';
+import { useClientes } from '../../../hooks/useClientes';
+import { ClienteList } from '../../../components/ClientesList';
+import { ClienteCreateRequest } from '../../../services/clientes.service';
 
-export const ClienteView: React.FC = () => {
-  const { clientes, loading, error, createCliente, deleteCliente, loadClientes } = useClientes();
+const ClientesView: React.FC = () => {
+  const { 
+    clientes, 
+    loading, 
+    error, 
+    createCliente, 
+    deleteCliente,
+    clearError 
+  } = useClientes();
+  
   const [showForm, setShowForm] = useState(false);
-  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
 
-  const handleCreateCliente = async (clienteData: Omit<Cliente, 'idCliente'>) => {
+  const handleCreateCliente = async (clienteData: ClienteCreateRequest) => {
     try {
       await createCliente(clienteData);
       setShowForm(false);
     } catch (err) {
-      console.error('Error creating client:', err);
+      console.error('Error creando cliente:', err);
     }
-  };
-
-  const handleEditCliente = (cliente: Cliente) => {
-    setEditingCliente(cliente);
-    setShowForm(true);
   };
 
   const handleDeleteCliente = async (id: number) => {
@@ -31,14 +30,14 @@ export const ClienteView: React.FC = () => {
       try {
         await deleteCliente(id);
       } catch (err) {
-        console.error('Error deleting client:', err);
+        console.error('Error eliminando cliente:', err);
       }
     }
   };
 
   const handleCloseForm = () => {
     setShowForm(false);
-    setEditingCliente(null);
+    clearError();
   };
 
   return (
@@ -48,26 +47,33 @@ export const ClienteView: React.FC = () => {
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          disabled={loading}
         >
-          Nuevo Cliente
+          {loading ? 'Cargando...' : 'Nuevo Cliente'}
         </button>
       </div>
 
-      {showForm && (
-        <ClienteForm
-          cliente={editingCliente}
-          onSubmit={handleCreateCliente}
-          onCancel={handleCloseForm}
-        />
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+          <button 
+            onClick={clearError}
+            className="float-right font-bold"
+          >
+            ×
+          </button>
+        </div>
       )}
 
       <ClienteList
         clientes={clientes}
         loading={loading}
         error={error}
-        onEditCliente={handleEditCliente}
+        onEditCliente={(cliente) => console.log('Editar:', cliente)}
         onDeleteCliente={handleDeleteCliente}
       />
     </div>
   );
 };
+
+export default ClientesView;
