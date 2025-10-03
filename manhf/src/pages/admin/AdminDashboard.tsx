@@ -10,6 +10,8 @@ import ClientesView from './views/ClientesView';
 import SolicitudesView from './views/SolicitudesView';
 import CalendarioView from './views/CalendarioView';
 
+import OrdenesHistorialView from './views/OrdenesHistorialView'; // ← IMPORTAR
+
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -20,18 +22,22 @@ const AdminDashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const renderContent = () => {
-    switch (activeView) {
-      case 'clientes':
-        return <ClientesView />;
-      case 'solicitudes':
-        return <SolicitudesView />;
-      case 'calendario':
-        return <CalendarioView />;
-      default:
-        return <DashboardView />;
-    }
-  };
+const renderView = () => {
+  switch (activeView) {
+    case 'dashboard':
+      return <DashboardView />;
+    case 'clientes':
+      return <ClientesView />;
+    case 'calendario':
+      return <CalendarioView />;
+    case 'ordenes': // ← AGREGAR ESTE CASE
+      return <OrdenesHistorialView />;
+    case 'solicitudes':
+      return <SolicitudesView />;
+    default:
+      return <DashboardView />;
+  }
+};
 
   return (
     <div className="admin-dashboard">
@@ -43,7 +49,7 @@ const AdminDashboard: React.FC = () => {
       
       <div className="main-content">
         <main className="page-content">
-          {renderContent()}
+          {renderView()}
         </main>
       </div>
     </div>

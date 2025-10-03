@@ -6,7 +6,8 @@ import LoginForm from './components/auth/LoginForm/LoginForm';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import Layout from './components/layout/Layout';
-
+import '../src/assets/styles/globals.css';
+import '../src/assets/styles/variables.css';
 // Componente simple para debug
 const Home: React.FC = () => {
   return (

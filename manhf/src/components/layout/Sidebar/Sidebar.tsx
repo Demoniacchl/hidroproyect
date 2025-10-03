@@ -12,13 +12,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, onLogout })
   const { user } = useAuth();
 
   // Navegación específica para ADMIN
-  const adminNavigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'clientes', label: 'Clientes', icon: '👥' },
-    { id: 'calendario', label: 'Calendario', icon: '📅' },
-    { id: 'solicitudes', label: 'Solicitudes', icon: '✅' },
-    { id: 'reportes', label: 'Reportes', icon: '📈' },
-  ];
+// En adminNavigation, agrega:
+const adminNavigation = [
+  { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+  { id: 'calendario', label: 'Calendario', icon: '📅' },
+  { id: 'clientes', label: 'Clientes', icon: '👥' },
+  { id: 'ordenes', label: 'Órdenes', icon: '📋' }, // ← NUEVO
+  { id: 'solicitudes', label: 'Solicitudes', icon: '✅' },
+  { id: 'reportes', label: 'Reportes', icon: '📈' },
+];
 
   // Navegación específica para TÉCNICO
   const tecnicoNavigation = [
@@ -33,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, onLogout })
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'usuarios', label: 'Usuarios', icon: '👥' },
     { id: 'clientes', label: 'Clientes', icon: '🏢' },
+    { id: 'ordenes', label: 'Órdenes', icon: '📋' },
     { id: 'configuracion', label: 'Configuración', icon: '⚙️' },
     { id: 'reportes', label: 'Reportes', icon: '📈' },
   ];

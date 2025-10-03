@@ -1,3 +1,4 @@
+import { apiClient } from './api';
 export const regionesService = {
   async getRegiones(): Promise<Region[]> {
     return await apiClient.get('/regiones');
