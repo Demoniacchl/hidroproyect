@@ -47,12 +47,6 @@ export const apiClient = {
     
     const token = localStorage.getItem('token');
     
-    // ✅ SOLO para endpoints protegidos, NO para login
-    if (!token && !endpoint.includes('/auth/')) {
-      console.warn('⚠️ No hay token JWT');
-      throw new Error('No autenticado');
-    }
-
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -78,6 +72,12 @@ export const apiClient = {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Error del servidor:', errorText);
+        
+        // Si es error 403, probablemente necesitas autenticación
+        if (response.status === 403) {
+          throw new Error('No tienes permisos para acceder a este recurso');
+        }
+        
         throw new Error(`Error ${response.status}: ${errorText}`);
       }
       
@@ -88,8 +88,24 @@ export const apiClient = {
     }
   },
 
-  get(endpoint: string) {
-    return this.request(endpoint);
+  get(endpoint: string, params?: any) {
+    let url = endpoint;
+    
+    // Manejar parámetros de query
+    if (params) {
+      const queryParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+          queryParams.append(key, params[key]);
+        }
+      });
+      const queryString = queryParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+    
+    return this.request(url);
   },
 
   post(endpoint: string, data: any) {

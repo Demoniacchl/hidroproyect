@@ -1,5 +1,6 @@
 package com.hidro.manh.rep;
 
+import com.hidro.manh.ety.Cliente;
 import com.hidro.manh.ety.EquipoMotor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +16,8 @@ public interface EquipoMotorRepository extends JpaRepository<EquipoMotor, Long> 
     // MÉTODOS EXISTENTES
     List<EquipoMotor> findByUbicacionIdUbicacion(Long idUbicacion);
     List<EquipoMotor> findByEstado(String estado);
-    
+    // En EquipoMotorRepository.java - agregar este método
+long countByUbicacionCliente(Cliente cliente);
     // MÉTODO CORREGIDO - Consulta JPQL válida
     @Query("SELECT em FROM EquipoMotor em WHERE em.idMotor NOT IN " +
            "(SELECT om.motor.idMotor FROM OrdenMantenimiento om WHERE om.horaIngreso > :fechaLimite)")

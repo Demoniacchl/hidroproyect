@@ -1,11 +1,20 @@
 package com.hidro.manh.srs;
 
 import com.hidro.manh.ety.OrdenReparacion;
+import com.hidro.manh.ety.EquipoMotor;
+import com.hidro.manh.ety.Usuario;
+import com.hidro.manh.dto.OrdenReparacionDto;
 import com.hidro.manh.enums.ProgresoReparacion;
 import com.hidro.manh.rep.OrdenReparacionRepository;
+import com.hidro.manh.rep.EquipoMotorRepository;
+import com.hidro.manh.rep.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,8 +23,14 @@ public class OrdenReparacionService {
 
     @Autowired
     private OrdenReparacionRepository ordenReparacionRepository;
+    
+    @Autowired
+    private EquipoMotorRepository equipoMotorRepository;
+    
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    // MÉTODOS FALTANTES CORREGIDOS
+    // MÉTODOS CRUD
     public Optional<OrdenReparacion> findById(Long id) {
         return ordenReparacionRepository.findById(id);
     }
@@ -28,7 +43,11 @@ public class OrdenReparacionService {
         ordenReparacionRepository.deleteById(id);
     }
     
-    // MÉTODO CORREGIDO - USANDO ENUM DIRECTAMENTE
+    public OrdenReparacion save(OrdenReparacion ordenReparacion) {
+        return ordenReparacionRepository.save(ordenReparacion);
+    }
+
+    // MÉTODOS DE NEGOCIO
     public OrdenReparacion actualizarProgreso(Long id, ProgresoReparacion progreso) {
         OrdenReparacion orden = ordenReparacionRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Orden de reparación no encontrada"));
@@ -37,7 +56,6 @@ public class OrdenReparacionService {
         return ordenReparacionRepository.save(orden);
     }
     
-    // MÉTODO PARA CONVERTIR STRING A ENUM
     public OrdenReparacion actualizarProgresoFromString(Long id, String progresoStr) {
         ProgresoReparacion progreso;
         try {
@@ -48,12 +66,69 @@ public class OrdenReparacionService {
         return actualizarProgreso(id, progreso);
     }
 
-    // MÉTODOS EXISTENTES
-    public List<OrdenReparacion> findByEquipoUbicacionClienteIdCliente(Long clienteId) {
-        return ordenReparacionRepository.findByEquipoUbicacionClienteIdCliente(clienteId);
+    // MÉTODOS DE CONVERSIÓN DTO - ENTITY (CORREGIDOS)
+    public OrdenReparacionDto convertToDto(OrdenReparacion entity) {
+        return OrdenReparacionDto.builder()
+            .idOrdenReparacion(entity.getIdOrdenReparacion())
+            .idMotor(entity.getMotor() != null ? entity.getMotor().getIdMotor() : null)
+            .idTecnico(entity.getTecnico() != null ? entity.getTecnico().getIdUsuario() : null)
+            .fecha(entity.getFecha())
+            .observaciones(entity.getObservaciones())
+            .progreso(entity.getProgreso())
+            .firmaCliente(entity.getFirmaCliente())
+            .build();
     }
     
-    public OrdenReparacion save(OrdenReparacion ordenReparacion) {
-        return ordenReparacionRepository.save(ordenReparacion);
+    public OrdenReparacion convertToEntity(OrdenReparacionDto dto) {
+        OrdenReparacion entity = new OrdenReparacion();
+        
+        // CAMPOS BÁSICOS
+        entity.setIdOrdenReparacion(dto.getIdOrdenReparacion());
+        entity.setFecha(dto.getFecha());
+        entity.setObservaciones(dto.getObservaciones());
+        entity.setProgreso(dto.getProgreso());
+        entity.setFirmaCliente(dto.getFirmaCliente());
+        
+        // RELACIONES FK
+        if (dto.getIdMotor() != null) {
+            EquipoMotor motor = equipoMotorRepository.findById(dto.getIdMotor())
+                .orElseThrow(() -> new RuntimeException("Motor no encontrado con ID: " + dto.getIdMotor()));
+            entity.setMotor(motor);
+        }
+        
+        if (dto.getIdTecnico() != null) {
+            Usuario tecnico = usuarioRepository.findById(dto.getIdTecnico())
+                .orElseThrow(() -> new RuntimeException("Técnico no encontrado con ID: " + dto.getIdTecnico()));
+            entity.setTecnico(tecnico);
+        }
+        
+        return entity;
+    }
+
+    // MÉTODOS DE CONSULTA PARA EL FRONTEND
+    public List<OrdenReparacion> findByClienteId(Long clienteId) {
+        return ordenReparacionRepository.findByMotorUbicacionClienteIdCliente(clienteId);
+    }
+    
+    public List<OrdenReparacion> findByMotorId(Long motorId) {
+        return ordenReparacionRepository.findByMotorId(motorId);
+    }
+    
+    public List<OrdenReparacion> findByRangoFechas(String inicioStr, String finStr) {
+        try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            Date inicio = format.parse(inicioStr);
+            Date fin = format.parse(finStr);
+            
+            // Ajustar fin para que incluya todo el día
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(fin);
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+            fin = cal.getTime();
+            
+            return ordenReparacionRepository.findByRangoFechas(inicio, fin);
+        } catch (ParseException e) {
+            throw new RuntimeException("Formato de fecha inválido. Use yyyy-MM-dd", e);
+        }
     }
 }

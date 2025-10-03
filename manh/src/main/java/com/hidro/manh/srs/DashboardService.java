@@ -37,15 +37,7 @@ public class DashboardService {
         return solicitudRepository.countByEstado(EstadoSolicitud.PENDIENTE);
     }
     
-    public Long getMantencionesEsteMes() {
-        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime endOfMonth = LocalDateTime.now().withDayOfMonth(LocalDateTime.now().getMonth().length(LocalDateTime.now().toLocalDate().isLeapYear())).withHour(23).withMinute(59).withSecond(59);
-        
-        Date startDate = Date.from(startOfMonth.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDate = Date.from(endOfMonth.atZone(ZoneId.systemDefault()).toInstant());
-        
-        return ordenMantenimientoRepository.countByHoraIngresoBetween(startDate, endDate);
-    }
+
 
     // MÉTODOS EXISTENTES CORREGIDOS
     public List<Map<String, Object>> getSolicitudesPorEstado() {
@@ -75,21 +67,5 @@ public class DashboardService {
             .collect(Collectors.toList());
     }
     
-    public List<Map<String, Object>> getOrdenesMantenimientoRecientes() {
-        return ordenMantenimientoRepository.findTop5ByOrderByHoraIngresoDesc()
-            .stream()
-            .map(orden -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("id", orden.getIdOrden());
-                map.put("fecha", orden.getHoraSalida());
-                map.put("observaciones", orden.getObservaciones());
-                if (orden.getMotor() != null && orden.getMotor().getUbicacion() != null && orden.getMotor().getUbicacion().getCliente() != null) {
-                    map.put("cliente", orden.getMotor().getUbicacion().getCliente().getNombre1());
-                } else {
-                    map.put("cliente", "N/A");
-                }
-                return map;
-            })
-            .collect(Collectors.toList());
-    }
+
 }

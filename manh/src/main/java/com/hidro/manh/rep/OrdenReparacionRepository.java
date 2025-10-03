@@ -11,23 +11,20 @@ import java.util.List;
 @Repository
 public interface OrdenReparacionRepository extends JpaRepository<OrdenReparacion, Long> {
     
-    // MÉTODO CORREGIDO - Usando @Query explícita
-    @Query("SELECT or FROM OrdenReparacion or WHERE or.motor.ubicacion.cliente.idCliente = :clienteId")
-    List<OrdenReparacion> findByEquipoUbicacionClienteIdCliente(@Param("clienteId") Long clienteId);
+    // Consulta corregida según estructura real de la base de datos
+    @Query("SELECT or FROM OrdenReparacion or " +
+           "JOIN or.motor m " +
+           "JOIN m.ubicacion u " +
+           "JOIN u.cliente c " +
+           "WHERE c.idCliente = :clienteId")
+    List<OrdenReparacion> findByMotorUbicacionClienteIdCliente(@Param("clienteId") Long clienteId);
     
-    // MÉTODO CORREGIDO - Para contar
-    @Query("SELECT COUNT(or) FROM OrdenReparacion or WHERE or.motor.ubicacion.cliente.idCliente = :clienteId")
-    Long countByEquipoUbicacionClienteIdCliente(@Param("clienteId") Long clienteId);
-    
-    // MÉTODOS EXISTENTES
-    List<OrdenReparacion> findByProgreso(String progreso);
-    
-    @Query("SELECT or FROM OrdenReparacion or WHERE or.tecnico.idUsuario = :tecnicoId")
-    List<OrdenReparacion> findByTecnicoId(@Param("tecnicoId") Long tecnicoId);
-    
-    @Query("SELECT or FROM OrdenReparacion or WHERE or.motor.idMotor = :motorId ORDER BY or.fecha DESC")
+    // Nuevos métodos para el frontend
+    @Query("SELECT or FROM OrdenReparacion or " +
+           "JOIN or.motor m " +
+           "WHERE m.idMotor = :motorId")
     List<OrdenReparacion> findByMotorId(@Param("motorId") Long motorId);
     
-    @Query("SELECT or FROM OrdenReparacion or WHERE or.fecha BETWEEN :startDate AND :endDate")
-    List<OrdenReparacion> findByFechaBetween(@Param("startDate") java.util.Date startDate, @Param("endDate") java.util.Date endDate);
+    @Query("SELECT or FROM OrdenReparacion or WHERE or.fecha BETWEEN :inicio AND :fin")
+    List<OrdenReparacion> findByRangoFechas(@Param("inicio") java.util.Date inicio, @Param("fin") java.util.Date fin);
 }

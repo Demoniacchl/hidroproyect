@@ -11,7 +11,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ComunaService {
     private final ComunaRep rep;
+    
     public List<ComunaDto> getByRegion(Integer regionId) {
-        return rep.findByRegionId(regionId).stream().map(c -> ComunaDto.builder().id(c.getId()).comuna(c.getComuna()).regionId(c.getRegionId()).build()).collect(Collectors.toList());
+        return rep.findByRegionId(regionId).stream().map(c -> {
+            ComunaDto dto = new ComunaDto();
+            dto.setId(c.getId());
+            dto.setComuna(c.getComuna());
+            dto.setRegionId(c.getRegionId());
+            return dto;
+        }).collect(Collectors.toList());
     }
 }

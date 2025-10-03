@@ -4,16 +4,14 @@
 
 }
 
-.main-content {
-  flex: 1;
-  margin-left: 250px;
-  min-height: 100vh;
-}
+
 
 
 .page-content {
   padding: 30px;
-  min-height: calc(100vh - 60px);
+  height: 90vh;
+  width: 80vw;
+
 }
 
 /* Loading */
@@ -151,7 +149,7 @@
 
 /* Dashboard View */
 .dashboard-main {
-  padding: 20px 0;
+  padding: 1x 0;
 }
 
 .stats-grid {
@@ -709,13 +707,9 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .main-content {
-    margin-left: 70px;
-  }
+
   
-  .page-content {
-    padding: 20px;
-  }
+
 
   .view-header {
     flex-direction: column;

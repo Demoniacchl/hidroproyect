@@ -13,6 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +32,7 @@ public class OrdenMantenimientoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // MÉTODOS FALTANTES QUE CAUSAN ERRORES
+    // MÉTODOS CRUD
     public List<OrdenMantenimiento> getAll() {
         return ordenMantenimientoRepository.findAll();
     }
@@ -45,7 +49,7 @@ public class OrdenMantenimientoService {
         return ordenMantenimientoRepository.save(entity);
     }
 
-    // MÉTODO DE CONVERSIÓN DTO A ENTITY CON GETTERS/SETTERS EXACTOS
+    // MÉTODOS DE CONVERSIÓN DTO - ENTITY
     public OrdenMantenimiento convertToEntity(OrdenMantenimientoDto dto) {
         OrdenMantenimiento entity = new OrdenMantenimiento();
         
@@ -64,7 +68,7 @@ public class OrdenMantenimientoService {
         entity.setT(dto.getT());
         entity.setVoltaje(dto.getVoltaje());
         
-        // CHECKLIST - 20 PUNTOS CON GETTERS EXACTOS
+        // CHECKLIST - 20 PUNTOS
         entity.setCambioRodamientos(dto.getCambioRodamientos());
         entity.setCambioSello(dto.getCambioSello());
         entity.setCambioVoluta(dto.getCambioVoluta());
@@ -102,7 +106,6 @@ public class OrdenMantenimientoService {
         return entity;
     }
 
-    // MÉTODO PARA CONVERTIR ENTITY A DTO (SI SE NECESITA)
     public OrdenMantenimientoDto convertToDto(OrdenMantenimiento entity) {
         return OrdenMantenimientoDto.builder()
             .idOrden(entity.getIdOrden())
@@ -141,8 +144,35 @@ public class OrdenMantenimientoService {
             .build();
     }
 
+    // MÉTODOS DE CONSULTA PARA EL FRONTEND
+    public List<OrdenMantenimiento> getByMotorId(Long motorId) {
+        return ordenMantenimientoRepository.findByMotorIdMotor(motorId);
+    }
+    
+    public List<OrdenMantenimiento> getByRangoFechas(String inicioStr, String finStr) {
+        try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            Date inicio = format.parse(inicioStr);
+            Date fin = format.parse(finStr);
+            
+            // Ajustar fin para que incluya todo el día
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(fin);
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+            fin = cal.getTime();
+            
+            return ordenMantenimientoRepository.findByRangoFechas(inicio, fin);
+        } catch (ParseException e) {
+            throw new RuntimeException("Formato de fecha inválido. Use yyyy-MM-dd", e);
+        }
+    }
+    
+    public List<OrdenMantenimiento> getByClienteId(Long clienteId) {
+        return ordenMantenimientoRepository.findByClienteId(clienteId);
+    }
+
     // MÉTODOS EXISTENTES
-    public List<OrdenMantenimiento> findByHoraIngresoBetween(java.util.Date start, java.util.Date end) {
+    public List<OrdenMantenimiento> findByHoraIngresoBetween(Date start, Date end) {
         return ordenMantenimientoRepository.findByHoraIngresoBetween(start, end);
     }
     

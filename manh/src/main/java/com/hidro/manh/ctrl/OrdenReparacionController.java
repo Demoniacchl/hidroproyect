@@ -1,13 +1,13 @@
 package com.hidro.manh.ctrl;
 
-import com.hidro.manh.ety.OrdenReparacion;
+import com.hidro.manh.dto.OrdenReparacionDto;
 import com.hidro.manh.srs.OrdenReparacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ordenes-reparacion")
@@ -16,40 +16,55 @@ public class OrdenReparacionController {
     @Autowired
     private OrdenReparacionService ordenReparacionService;
 
-    // MÉTODOS CORREGIDOS
     @GetMapping
-    public List<OrdenReparacion> getAll() {
-        return ordenReparacionService.findAll();
+    public List<OrdenReparacionDto> getAll() {
+        return ordenReparacionService.findAll().stream()
+                .map(ordenReparacionService::convertToDto)
+                .collect(Collectors.toList());
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<OrdenReparacion> getById(@PathVariable Long id) {
-        Optional<OrdenReparacion> orden = ordenReparacionService.findById(id);
-        return orden.map(ResponseEntity::ok)
-                   .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<OrdenReparacionDto> getById(@PathVariable Long id) {
+        return ordenReparacionService.findById(id)
+                .map(ordenReparacionService::convertToDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
     
     @PostMapping
-    public OrdenReparacion create(@RequestBody OrdenReparacion ordenReparacion) {
-        return ordenReparacionService.save(ordenReparacion);
+    public ResponseEntity<OrdenReparacionDto> create(@RequestBody OrdenReparacionDto dto) {
+        try {
+            var entity = ordenReparacionService.convertToEntity(dto);
+            var savedEntity = ordenReparacionService.save(entity);
+            return ResponseEntity.ok(ordenReparacionService.convertToDto(savedEntity));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<OrdenReparacion> update(@PathVariable Long id, @RequestBody OrdenReparacion ordenReparacion) {
-        if (!ordenReparacionService.findById(id).isPresent()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<OrdenReparacionDto> update(@PathVariable Long id, @RequestBody OrdenReparacionDto dto) {
+        try {
+            if (!ordenReparacionService.findById(id).isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            var entity = ordenReparacionService.convertToEntity(dto);
+            entity.setIdOrdenReparacion(id);
+            var updatedEntity = ordenReparacionService.save(entity);
+            return ResponseEntity.ok(ordenReparacionService.convertToDto(updatedEntity));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
-        ordenReparacion.setIdOrdenReparacion(id);
-        return ResponseEntity.ok(ordenReparacionService.save(ordenReparacion));
     }
     
     @PutMapping("/{id}/progreso")
-    public ResponseEntity<OrdenReparacion> updateProgreso(
+    public ResponseEntity<OrdenReparacionDto> updateProgreso(
             @PathVariable Long id, 
             @RequestParam String progreso) {
         try {
-            OrdenReparacion orden = ordenReparacionService.actualizarProgresoFromString(id, progreso);
-            return ResponseEntity.ok(orden);
+            var orden = ordenReparacionService.actualizarProgresoFromString(id, progreso);
+            return ResponseEntity.ok(ordenReparacionService.convertToDto(orden));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -64,8 +79,28 @@ public class OrdenReparacionController {
         return ResponseEntity.noContent().build();
     }
     
+    // ENDPOINTS EXISTENTES
     @GetMapping("/cliente/{clienteId}")
-    public List<OrdenReparacion> getByClienteId(@PathVariable Long clienteId) {
-        return ordenReparacionService.findByEquipoUbicacionClienteIdCliente(clienteId);
+    public List<OrdenReparacionDto> getByClienteId(@PathVariable Long clienteId) {
+        return ordenReparacionService.findByClienteId(clienteId).stream()
+                .map(ordenReparacionService::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    // NUEVOS ENDPOINTS PARA EL FRONTEND
+    @GetMapping("/motor/{motorId}")
+    public List<OrdenReparacionDto> getByMotorId(@PathVariable Long motorId) {
+        return ordenReparacionService.findByMotorId(motorId).stream()
+                .map(ordenReparacionService::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    @GetMapping("/rango-fechas")
+    public List<OrdenReparacionDto> getByRangoFechas(
+            @RequestParam String inicio, 
+            @RequestParam String fin) {
+        return ordenReparacionService.findByRangoFechas(inicio, fin).stream()
+                .map(ordenReparacionService::convertToDto)
+                .collect(Collectors.toList());
     }
 }

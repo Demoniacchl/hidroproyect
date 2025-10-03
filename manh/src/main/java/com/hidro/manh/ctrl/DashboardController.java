@@ -25,7 +25,7 @@ public class DashboardController {
             // USANDO MÉTODOS QUE AHORA EXISTEN EN DashboardService
             metricas.put("totalSolicitudes", dashboardService.getTotalSolicitudes());
             metricas.put("solicitudesPendientes", dashboardService.getSolicitudesPendientes());
-            metricas.put("mantencionesEsteMes", dashboardService.getMantencionesEsteMes());
+
             
             return ResponseEntity.ok(metricas);
         } catch (Exception e) {
@@ -56,13 +56,5 @@ public class DashboardController {
         }
     }
     
-    @GetMapping("/ordenes-recientes")
-    public ResponseEntity<List<Map<String, Object>>> getOrdenesRecientes() {
-        try {
-            List<Map<String, Object>> data = dashboardService.getOrdenesMantenimientoRecientes();
-            return ResponseEntity.ok(data);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+
 }

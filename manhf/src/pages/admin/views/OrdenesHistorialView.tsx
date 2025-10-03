@@ -21,20 +21,28 @@ const OrdenesHistorialView: React.FC = () => {
       setLoading(true);
       setError('');
       
-      if (showMantencion) {
-        const mantencionesData = await ordenesService.getMantenciones();
-        setMantenciones(mantencionesData);
-      }
+      console.log('🔄 Iniciando carga de órdenes...');
       
-      if (showReparacion) {
-        const reparacionesData = await ordenesService.getReparaciones();
-        setReparaciones(reparacionesData);
+      // Verificar autenticación primero
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No estás autenticado. Por favor inicia sesión.');
       }
+
+      // Cargar ambas en paralelo
+      const [mantencionesData, reparacionesData] = await Promise.all([
+        ordenesService.getMantenciones(),
+        ordenesService.getReparaciones()
+      ]);
       
-    } catch (error) {
-      console.error('Error cargando órdenes:', error);
-      setError('Error al cargar las órdenes');
-      // Datos de ejemplo en caso de error (para desarrollo)
+      setMantenciones(mantencionesData);
+      setReparaciones(reparacionesData);
+      
+      console.log(`✅ Carga exitosa: ${mantencionesData.length} mantenciones, ${reparacionesData.length} reparaciones`);
+      
+    } catch (error: any) {
+      console.error('❌ Error cargando órdenes:', error);
+      setError(error.message || 'Error al cargar las órdenes');
       setMantenciones([]);
       setReparaciones([]);
     } finally {
@@ -52,58 +60,23 @@ const OrdenesHistorialView: React.FC = () => {
       setLoading(true);
       const resultado = await ordenesService.buscarOrdenes(busqueda);
       
-      if (showMantencion) {
-        setMantenciones(resultado.mantenciones || []);
-      }
+      setMantenciones(resultado.mantenciones || []);
+      setReparaciones(resultado.reparaciones || []);
       
-      if (showReparacion) {
-        setReparaciones(resultado.reparaciones || []);
-      }
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error buscando órdenes:', error);
-      setError('Error al buscar órdenes');
+      setError('Error al buscar órdenes: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleToggleMantencion = () => {
-    const nuevoEstado = !showMantencion;
-    setShowMantencion(nuevoEstado);
-    
-    if (nuevoEstado && mantenciones.length === 0) {
-      // Si se activa y no hay datos, cargar
-      cargarMantenciones();
-    }
+    setShowMantencion(!showMantencion);
   };
 
   const handleToggleReparacion = () => {
-    const nuevoEstado = !showReparacion;
-    setShowReparacion(nuevoEstado);
-    
-    if (nuevoEstado && reparaciones.length === 0) {
-      // Si se activa y no hay datos, cargar
-      cargarReparaciones();
-    }
-  };
-
-  const cargarMantenciones = async () => {
-    try {
-      const mantencionesData = await ordenesService.getMantenciones();
-      setMantenciones(mantencionesData);
-    } catch (error) {
-      console.error('Error cargando mantenciones:', error);
-    }
-  };
-
-  const cargarReparaciones = async () => {
-    try {
-      const reparacionesData = await ordenesService.getReparaciones();
-      setReparaciones(reparacionesData);
-    } catch (error) {
-      console.error('Error cargando reparaciones:', error);
-    }
+    setShowReparacion(!showReparacion);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -113,42 +86,54 @@ const OrdenesHistorialView: React.FC = () => {
   };
 
   const formatFecha = (fechaString: string) => {
-    return new Date(fechaString).toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    try {
+      return new Date(fechaString).toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return fechaString;
+    }
   };
 
   const formatHora = (fechaString: string) => {
-    return new Date(fechaString).toLocaleTimeString('es-CL', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(fechaString).toLocaleTimeString('es-CL', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return fechaString;
+    }
   };
 
   const getProgresoColor = (progreso: string) => {
-    switch (progreso) {
-      case 'REALIZADO': return 'badge-success';
-      case 'EN_GESTION': return 'badge-warning';
-      case 'NO_REALIZADO': return 'badge-danger';
-      default: return 'badge-secondary';
+    switch (progreso?.toUpperCase()) {
+      case 'REALIZADO': return 'bg-green-100 text-green-800';
+      case 'EN_GESTION': return 'bg-yellow-100 text-yellow-800';
+      case 'NO_REALIZADO': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getTipoOrdenColor = (tipo: string) => {
-    switch (tipo) {
-      case 'PREVENTIVA': return 'badge-primary';
-      case 'CORRECTIVA': return 'badge-warning';
-      case 'EMERGENCIA': return 'badge-danger';
-      default: return 'badge-secondary';
+    switch (tipo?.toUpperCase()) {
+      case 'PREVENTIVA': return 'bg-blue-100 text-blue-800';
+      case 'CORRECTIVA': return 'bg-orange-100 text-orange-800';
+      case 'EMERGENCIA': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Filtrar órdenes para mostrar según los toggles
+  const mantencionesFiltradas = showMantencion ? mantenciones : [];
+  const reparacionesFiltradas = showReparacion ? reparaciones : [];
 
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="spinner"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         <span className="ml-2">Cargando órdenes...</span>
       </div>
     );
@@ -169,17 +154,17 @@ const OrdenesHistorialView: React.FC = () => {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="input w-full"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button 
-            className="btn btn-primary"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={handleBuscar}
           >
             Buscar
           </button>
           <button 
-            className="btn btn-outline"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
             onClick={cargarOrdenes}
           >
             🔄 Actualizar
@@ -189,14 +174,22 @@ const OrdenesHistorialView: React.FC = () => {
         {/* Filtros Toggle */}
         <div className="flex gap-4 mb-6">
           <button
-            className={`btn ${showMantencion ? 'btn-primary' : 'btn-outline'}`}
+            className={`px-4 py-2 rounded-lg ${
+              showMantencion 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
             onClick={handleToggleMantencion}
           >
             {showMantencion ? '✅ MANTENCIÓN' : '⬜ MANTENCIÓN'}
           </button>
           
           <button
-            className={`btn ${showReparacion ? 'btn-primary' : 'btn-outline'}`}
+            className={`px-4 py-2 rounded-lg ${
+              showReparacion 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
             onClick={handleToggleReparacion}
           >
             {showReparacion ? '✅ REPARACIÓN' : '⬜ REPARACIÓN'}
@@ -206,7 +199,7 @@ const OrdenesHistorialView: React.FC = () => {
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+          <strong>Error:</strong> {error}
         </div>
       )}
 
@@ -215,75 +208,73 @@ const OrdenesHistorialView: React.FC = () => {
         {/* Columna Mantenciones */}
         {showMantencion && (
           <div className="space-y-4">
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title">📋 Órdenes de Mantención</h2>
-                <span className="badge badge-primary">
-                  {mantenciones.length} órdenes
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">📋 Órdenes de Mantención</h2>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  {mantencionesFiltradas.length} órdenes
                 </span>
               </div>
             </div>
 
-            {mantenciones.length === 0 ? (
-              <div className="card">
-                <div className="card-content text-center py-8">
-                  <p className="text-muted">No hay órdenes de mantención</p>
-                </div>
+            {mantencionesFiltradas.length === 0 ? (
+              <div className="bg-white p-8 rounded-lg shadow text-center">
+                <p className="text-gray-500">No hay órdenes de mantención</p>
               </div>
             ) : (
-              mantenciones.map((orden) => (
-                <div key={orden.id_orden} className="card hover:bg-accent cursor-pointer">
-                  <div className="card-header">
+              mantencionesFiltradas.map((orden) => (
+                <div key={orden.id_orden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="p-4 border-b">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="card-title">Orden #{orden.id_orden}</h3>
-                        <p className="text-muted">
+                        <h3 className="font-semibold text-lg">Orden #{orden.id_orden}</h3>
+                        <p className="text-gray-600 text-sm">
                           {orden.cliente?.nombre1} • {orden.ubicacion?.nombre}
                         </p>
                       </div>
-                      <span className={`badge ${getTipoOrdenColor(orden.tipo_orden)}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getTipoOrdenColor(orden.tipo_orden)}`}>
                         {orden.tipo_orden}
                       </span>
                     </div>
                   </div>
 
-                  <div className="card-content">
-                    <div className="space-y-2">
+                  <div className="p-4">
+                    <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted">Equipo:</span>
-                        <span>{orden.equipo?.marca} {orden.equipo?.modelo}</span>
+                        <span className="text-gray-600">Equipo:</span>
+                        <span className="font-medium">{orden.equipo?.marca} {orden.equipo?.modelo}</span>
                       </div>
                       
                       <div className="flex justify-between">
-                        <span className="text-muted">Técnico:</span>
-                        <span>{orden.tecnico?.nombre}</span>
+                        <span className="text-gray-600">Técnico:</span>
+                        <span className="font-medium">{orden.tecnico?.nombre}</span>
                       </div>
                       
                       <div className="flex justify-between">
-                        <span className="text-muted">Fecha:</span>
-                        <span>{formatFecha(orden.hora_ingreso)}</span>
+                        <span className="text-gray-600">Fecha:</span>
+                        <span className="font-medium">{formatFecha(orden.hora_ingreso)}</span>
                       </div>
                       
                       <div className="flex justify-between">
-                        <span className="text-muted">Horario:</span>
-                        <span>{formatHora(orden.hora_ingreso)} - {formatHora(orden.hora_salida)}</span>
+                        <span className="text-gray-600">Horario:</span>
+                        <span className="font-medium">{formatHora(orden.hora_ingreso)} - {formatHora(orden.hora_salida)}</span>
                       </div>
 
                       {orden.observaciones && (
-                        <div className="mt-2">
-                          <span className="text-muted">Observaciones:</span>
-                          <p className="text-sm mt-1">{orden.observaciones}</p>
+                        <div className="mt-3 pt-3 border-t">
+                          <span className="text-gray-600 block mb-1">Observaciones:</span>
+                          <p className="text-sm text-gray-700">{orden.observaciones}</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="card-footer">
+                  <div className="p-4 border-t bg-gray-50 rounded-b-lg">
                     <div className="flex gap-2">
-                      <button className="btn btn-sm btn-outline">
+                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
                         👁️ Ver Detalles
                       </button>
-                      <button className="btn btn-sm btn-outline">
+                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
                         📄 Descargar PDF
                       </button>
                     </div>
@@ -297,74 +288,72 @@ const OrdenesHistorialView: React.FC = () => {
         {/* Columna Reparaciones */}
         {showReparacion && (
           <div className="space-y-4">
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title">🔧 Órdenes de Reparación</h2>
-                <span className="badge badge-primary">
-                  {reparaciones.length} órdenes
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">🔧 Órdenes de Reparación</h2>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  {reparacionesFiltradas.length} órdenes
                 </span>
               </div>
             </div>
 
-            {reparaciones.length === 0 ? (
-              <div className="card">
-                <div className="card-content text-center py-8">
-                  <p className="text-muted">No hay órdenes de reparación</p>
-                </div>
+            {reparacionesFiltradas.length === 0 ? (
+              <div className="bg-white p-8 rounded-lg shadow text-center">
+                <p className="text-gray-500">No hay órdenes de reparación</p>
               </div>
             ) : (
-              reparaciones.map((orden) => (
-                <div key={orden.id_orden_reparacion} className="card hover:bg-accent cursor-pointer">
-                  <div className="card-header">
+              reparacionesFiltradas.map((orden) => (
+                <div key={orden.id_orden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="p-4 border-b">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="card-title">Orden #{orden.id_orden_reparacion}</h3>
-                        <p className="text-muted">
-                          {orden.cliente?.nombre1} • {orden.ubicacion?.nombre}
+                        <h3 className="font-semibold text-lg">Orden #{orden.id_orden}</h3>
+                        <p className="text-gray-600 text-sm">
+                          {orden.cliente?.id_cliente} • {orden.ubicacion?.nombre}
                         </p>
                       </div>
-                      <span className={`badge ${getProgresoColor(orden.progreso)}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getProgresoColor(orden.progreso)}`}>
                         {orden.progreso}
                       </span>
                     </div>
                   </div>
 
-                  <div className="card-content">
-                    <div className="space-y-2">
+                  <div className="p-4">
+                    <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted">Equipo:</span>
-                        <span>{orden.equipo?.marca} {orden.equipo?.modelo}</span>
+                        <span className="text-gray-600">Equipo:</span>
+                        <span className="font-medium">{orden.equipo?.marca} {orden.equipo?.modelo}</span>
                       </div>
                       
                       <div className="flex justify-between">
-                        <span className="text-muted">Técnico:</span>
-                        <span>{orden.tecnico?.nombre}</span>
+                        <span className="text-gray-600">Técnico:</span>
+                        <span className="font-medium">{orden.tecnico?.nombre}</span>
                       </div>
                       
-                      <div className="flex justify-between">
-                        <span className="text-muted">Fecha:</span>
-                        <span>{formatFecha(orden.fecha)}</span>
+                      <div className="flex">
+                        <span className="text-gray-600">Fecha:</span>
+                        <span className="font-medium">{formatFecha(orden.fecha)}</span>
                       </div>
 
                       {orden.observaciones && (
-                        <div className="mt-2">
-                          <span className="text-muted">Observaciones:</span>
-                          <p className="text-sm mt-1">{orden.observaciones}</p>
+                        <div className="mt-3 pt-3 border-t">
+                          <span className="text-gray-600 block mb-1">Observaciones:</span>
+                          <p className="text-sm text-gray-700">{orden.observaciones}</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="card-footer">
+                  <div className="p-4 border-t bg-gray-50 rounded-b-lg">
                     <div className="flex gap-2">
-                      <button className="btn btn-sm btn-outline">
+                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
                         👁️ Ver Detalles
                       </button>
-                      <button className="btn btn-sm btn-outline">
+                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
                         📄 Descargar PDF
                       </button>
                       {orden.progreso !== 'REALIZADO' && (
-                        <button className="btn btn-sm btn-secondary">
+                        <button className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">
                           ✏️ Editar
                         </button>
                       )}
@@ -380,7 +369,7 @@ const OrdenesHistorialView: React.FC = () => {
       {/* Mensaje cuando no hay nada seleccionado */}
       {!showMantencion && !showReparacion && (
         <div className="text-center py-8">
-          <p className="text-muted text-lg">
+          <p className="text-gray-500 text-lg">
             Selecciona al menos un tipo de orden para visualizar
           </p>
         </div>

@@ -1,6 +1,5 @@
 package com.hidro.manh.ctrl;
 
-import com.hidro.manh.ety.OrdenMantenimiento;
 import com.hidro.manh.dto.OrdenMantenimientoDto;
 import com.hidro.manh.srs.OrdenMantenimientoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ordenes-mantenimiento")
@@ -17,43 +16,43 @@ public class OrdenMantenimientoController {
     @Autowired
     private OrdenMantenimientoService service;
 
-    // MÉTODOS CORREGIDOS - USANDO MÉTODOS QUE AHORA EXISTEN
     @GetMapping
-    public List<OrdenMantenimiento> getAll() {
-        return service.getAll(); // AHORA EXISTE
+    public List<OrdenMantenimientoDto> getAll() {
+        return service.getAll().stream()
+                .map(service::convertToDto)
+                .collect(Collectors.toList());
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<OrdenMantenimiento> getById(@PathVariable Long id) {
-        Optional<OrdenMantenimiento> orden = service.getById(id); // AHORA EXISTE
-        return orden.map(ResponseEntity::ok)
-                   .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<OrdenMantenimientoDto> getById(@PathVariable Long id) {
+        return service.getById(id)
+                .map(service::convertToDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
     
     @PostMapping
-    public ResponseEntity<OrdenMantenimiento> create(@RequestBody OrdenMantenimientoDto dto) {
+    public ResponseEntity<OrdenMantenimientoDto> create(@RequestBody OrdenMantenimientoDto dto) {
         try {
-            // CONVERTIR DTO A ENTITY ANTES DE GUARDAR
-            OrdenMantenimiento entity = service.convertToEntity(dto);
-            OrdenMantenimiento saved = service.save(entity);
-            return ResponseEntity.ok(saved);
+            var entity = service.convertToEntity(dto);
+            var savedEntity = service.save(entity);
+            return ResponseEntity.ok(service.convertToDto(savedEntity));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<OrdenMantenimiento> update(@PathVariable Long id, @RequestBody OrdenMantenimientoDto dto) {
+    public ResponseEntity<OrdenMantenimientoDto> update(@PathVariable Long id, @RequestBody OrdenMantenimientoDto dto) {
         try {
             if (!service.getById(id).isPresent()) {
                 return ResponseEntity.notFound().build();
             }
             
-            // CONVERTIR DTO A ENTITY
-            OrdenMantenimiento entity = service.convertToEntity(dto);
-            entity.setIdOrden(id); // MANTENER EL MISMO ID
-            OrdenMantenimiento updated = service.save(entity);
-            return ResponseEntity.ok(updated);
+            var entity = service.convertToEntity(dto);
+            entity.setIdOrden(id);
+            var updatedEntity = service.save(entity);
+            return ResponseEntity.ok(service.convertToDto(updatedEntity));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -64,23 +63,31 @@ public class OrdenMantenimientoController {
         if (!service.getById(id).isPresent()) {
             return ResponseEntity.notFound().build();
         }
-        
-        service.delete(id); // AHORA EXISTE
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    // MÉTODOS EXISTENTES
+    // NUEVOS ENDPOINTS PARA EL FRONTEND
     @GetMapping("/motor/{motorId}")
-    public List<OrdenMantenimiento> getByMotor(@PathVariable Long motorId) {
-        // Este método necesitaría implementación adicional en el service
-        return List.of();
+    public List<OrdenMantenimientoDto> getByMotor(@PathVariable Long motorId) {
+        return service.getByMotorId(motorId).stream()
+                .map(service::convertToDto)
+                .collect(Collectors.toList());
     }
     
     @GetMapping("/rango-fechas")
-    public List<OrdenMantenimiento> getByRangoFechas(
+    public List<OrdenMantenimientoDto> getByRangoFechas(
             @RequestParam String inicio, 
             @RequestParam String fin) {
-        // Este método necesitaría implementación adicional en el service
-        return List.of();
+        return service.getByRangoFechas(inicio, fin).stream()
+                .map(service::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    @GetMapping("/cliente/{clienteId}")
+    public List<OrdenMantenimientoDto> getByClienteId(@PathVariable Long clienteId) {
+        return service.getByClienteId(clienteId).stream()
+                .map(service::convertToDto)
+                .collect(Collectors.toList());
     }
 }
