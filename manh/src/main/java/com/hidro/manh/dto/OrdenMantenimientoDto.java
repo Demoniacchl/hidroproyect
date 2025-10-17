@@ -48,4 +48,7 @@ public class OrdenMantenimientoDto {
     private EstadoMantenimiento revisoValvFlotador;
     private EstadoMantenimiento revisoEstanqueAgua;
     private EstadoMantenimiento revisoFittingsOtros;
+
+        private Long idCliente;
+    private Long idUbicacion;
 }

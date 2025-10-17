@@ -1,21 +1,21 @@
 import { apiClient } from './api';
 
 export interface Cliente {
-  id_cliente: number;
-  n_cliente: number;
+  idCliente: number;          // Cambiado de id_cliente
+  nCliente: number;           // Cambiado de n_cliente
   nombre1: string;
   rut: string;
 }
 
 export interface Equipo {
-  id_motor: number;
+  idMotor: number;            // Cambiado de id_motor
   tipo: string;
   marca: string;
   modelo: string;
 }
 
 export interface Tecnico {
-  id_usuario: number;
+  idUsuario: number;          // Cambiado de id_usuario
   nombre: string;
 }
 
@@ -26,38 +26,39 @@ export interface Ubicacion {
 }
 
 export interface OrdenMantencion {
-  id_orden: number;
-  id_motor: number;
-  id_tecnico: number;
-  hora_ingreso: string;
-  hora_salida: string;
+  idOrden: number;            // Cambiado de id_orden
+  idMotor: number;            // Cambiado de id_motor
+  idTecnico: number;          // Cambiado de id_tecnico
+  horaIngreso: string;        // Cambiado de hora_ingreso
+  horaSalida: string;         // Cambiado de hora_salida
   r: number;
   s: number;
   t: number;
   voltaje: number;
   observaciones: string;
-  firma_cliente: string;
-  tipo_orden: string;
-  cambio_rodamientos?: string;
-  cambio_sello?: string;
-  cambio_voluta?: string;
-  rebobino_campos?: string;
-  protecciones_saltadas?: string;
-  cambio_protecciones?: string;
-  contactores_quemados?: string;
-  cambio_contactores?: string;
-  cambio_luces_piloto?: string;
-  limpio_tablero?: string;
-  cambio_presostato?: string;
-  cambio_manometro?: string;
-  cargo_con_aire_ep?: string;
-  reviso_presion_ep?: string;
-  cambio_valv_retencion?: string;
-  suprimo_filtracion?: string;
-  reviso_valv_compuerta?: string;
-  reviso_valv_flotador?: string;
-  reviso_estanque_agua?: string;
-  reviso_fittings_otros?: string;
+  firmaCliente: string;       // Cambiado de firma_cliente
+  tipoOrden: string;          // Cambiado de tipo_orden
+  campoAdicional?: string;
+  cambioRodamientos?: string;
+  cambioSello?: string;
+  cambioVoluta?: string;
+  rebobinoCampos?: string;
+  proteccionesSaltadas?: string;
+  cambioProtecciones?: string;
+  contactoresQuemados?: string;
+  cambioContactores?: string;
+  cambioLucesPiloto?: string;
+  limpioTablero?: string;
+  cambioPresostato?: string;
+  cambioManometro?: string;
+  cargoConAireEp?: string;
+  revisoPresionEp?: string;
+  cambioValvRetencion?: string;
+  suprimoFiltracion?: string;
+  revisoValvCompuerta?: string;
+  revisoValvFlotador?: string;
+  revisoEstanqueAgua?: string;
+  revisoFittingsOtros?: string;
   cliente?: Cliente;
   equipo?: Equipo;
   tecnico?: Tecnico;
@@ -65,14 +66,14 @@ export interface OrdenMantencion {
 }
 
 export interface OrdenReparacion {
-  id_orden: number;
-  id_motor: number;
-  id_tecnico: number;
+  idOrden: number;            // Cambiado de id_orden
+  idMotor: number;            // Cambiado de id_motor
+  idTecnico: number;          // Cambiado de id_tecnico
   fecha: string;
   observaciones: string;
   progreso: string;
-  firma_cliente: string;
-  cliente?: Cliente;
+  firmaCliente: string;       // Cambiado de firma_cliente
+  idCliente: number;
   equipo?: Equipo;
   tecnico?: Tecnico;
   ubicacion?: Ubicacion;
@@ -120,7 +121,7 @@ export const ordenesService = {
       
       console.log('🔐 Token encontrado, haciendo request...');
       const response = await apiClient.get('/ordenes-mantenimiento');
-      console.log('✅ Órdenes de mantención obtenidas correctamente');
+      console.log('✅ Órdenes de mantención obtenidas correctamente', response);
       return response;
       
     } catch (error: any) {
@@ -148,7 +149,7 @@ export const ordenesService = {
       
       console.log('🔐 Token encontrado, haciendo request...');
       const response = await apiClient.get('/ordenes-reparacion');
-      console.log('✅ Órdenes de reparación obtenidas correctamente');
+      console.log('✅ Órdenes de reparación obtenidas correctamente', response);
       return response;
       
     } catch (error: any) {

@@ -138,4 +138,12 @@ public class OrdenMantenimiento {
     @Enumerated(EnumType.STRING)
     @Column(name = "reviso_fittings_otros")
     private EstadoMantenimiento revisoFittingsOtros;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cliente")
+    private Cliente cliente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_ubicacion")
+    private Ubicacion ubicacion;
 }

@@ -1,6 +1,6 @@
 export interface Cliente {
   idCliente: number;
-  n_cliente: number;
+  ncliente: number;
   nombre1: string;
   nombre2?: string;
   rut: string;
@@ -11,7 +11,7 @@ export interface Cliente {
 }
 
 export interface ClienteFormData {
-  n_cliente: number;
+  ncliente: number;
   nombre1: string;
   nombre2?: string;
   rut: string;

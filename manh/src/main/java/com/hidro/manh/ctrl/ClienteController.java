@@ -1,60 +1,49 @@
 package com.hidro.manh.ctrl;
 
-import com.hidro.manh.ety.Cliente;
+import com.hidro.manh.dto.ClienteDto;
 import com.hidro.manh.srs.ClienteService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
 public class ClienteController {
 
-    @Autowired
-    private ClienteService clienteService;
+    private final ClienteService clienteService;
 
-    // Listar clientes paginados
+    public ClienteController(ClienteService clienteService) {
+        this.clienteService = clienteService;
+    }
+
     @GetMapping
-    public Page<Cliente> getAllClientes(Pageable pageable) {
-        return clienteService.getAllClientes(pageable);
-    }
-//     // Buscar cliente por número de cliente
-// @GetMapping("/numero/{ncliente}")
-// public ResponseEntity<Cliente> getByNumeroCliente(@PathVariable Integer ncliente) {
-//     Optional<Cliente> cliente = clienteService.findByNcliente(ncliente); 
-//     return cliente.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-// }
-//     // Filtrar clientes por región
-    @GetMapping("/region/{regionId}")
-    public Page<Cliente> getClientesByRegion(@PathVariable Integer regionId, Pageable pageable) {
-        return clienteService.getClientesByRegion(regionId, pageable);
+    public ResponseEntity<List<ClienteDto>> getAllClients() {
+        List<ClienteDto> clients = clienteService.getAllClients();
+        return ResponseEntity.ok(clients);
     }
 
-    // Filtrar clientes por comuna
-    @GetMapping("/comuna/{comunaId}")
-    public Page<Cliente> getClientesByComuna(@PathVariable Integer comunaId, Pageable pageable) {
-        return clienteService.getClientesByComuna(comunaId, pageable);
-    }
-
-    // Obtener cliente específico
     @GetMapping("/{id}")
-    public Optional<Cliente> getCliente(@PathVariable Long id) {
-        return clienteService.getClienteById(id);
+    public ResponseEntity<ClienteDto> getClientById(@PathVariable Long id) {
+        ClienteDto client = clienteService.getClientById(id);
+        return ResponseEntity.ok(client);
     }
 
-    // Crear o actualizar cliente
     @PostMapping
-    public Cliente saveCliente(@RequestBody Cliente cliente) {
-        return clienteService.saveCliente(cliente);
+    public ResponseEntity<ClienteDto> createClient(@RequestBody ClienteDto clientDto) {
+        ClienteDto createdClient = clienteService.createClient(clientDto);
+        return ResponseEntity.ok(createdClient);
     }
 
-    // Eliminar cliente
+    @PutMapping("/{id}")
+    public ResponseEntity<ClienteDto> updateClient(@PathVariable Long id, @RequestBody ClienteDto clientDto) {
+        ClienteDto updatedClient = clienteService.updateClient(id, clientDto);
+        return ResponseEntity.ok(updatedClient);
+    }
+
     @DeleteMapping("/{id}")
-    public void deleteCliente(@PathVariable Long id) {
-        clienteService.deleteCliente(id);
+    public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
+        clienteService.deleteClient(id);
+        return ResponseEntity.noContent().build();
     }
 }

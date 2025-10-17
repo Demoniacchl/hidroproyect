@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { calendarioService } from '../../../services/calendario.service';
-import { clientesService } from '../../../services/clientes.service';
 
 interface EventoCalendario {
   id: number;
@@ -26,6 +24,8 @@ const CalendarioView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventosModal, setShowEventosModal] = useState(false);
   const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
+  const [showEditarEventoModal, setShowEditarEventoModal] = useState(false);
+  const [eventoEditando, setEventoEditando] = useState<EventoCalendario | null>(null);
   const [nuevoEvento, setNuevoEvento] = useState({
     idCliente: 0,
     idTecnico: 1,
@@ -43,21 +43,76 @@ const CalendarioView: React.FC = () => {
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
+  // Datos ficticios para el demo
+  const clientesFicticios: Cliente[] = [
+    { idCliente: 1, nombre1: 'Juan Pérez' },
+    { idCliente: 2, nombre1: 'María García' },
+    { idCliente: 3, nombre1: 'Carlos López' },
+    { idCliente: 4, nombre1: 'Ana Martínez' },
+    { idCliente: 5, nombre1: 'Pedro Rodríguez' }
+  ];
+
+  const eventosFicticios: EventoCalendario[] = [
+    {
+      id: 1,
+      idCliente: 1,
+      idTecnico: 1,
+      tipoEvento: 'MANTENCION',
+      titulo: 'Mantención preventiva',
+      descripcion: 'Revisión general del sistema',
+      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 15, 9, 0).toISOString(),
+      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 15, 11, 0).toISOString(),
+      estado: 'PROGRAMADO'
+    },
+    {
+      id: 2,
+      idCliente: 2,
+      idTecnico: 1,
+      tipoEvento: 'REPARACION',
+      titulo: 'Reparación de fuga',
+      descripcion: 'Reparación en tubería principal',
+      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 18, 14, 0).toISOString(),
+      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 18, 16, 0).toISOString(),
+      estado: 'PROGRAMADO'
+    },
+    {
+      id: 3,
+      idCliente: 3,
+      idTecnico: 1,
+      tipoEvento: 'INSTALACION',
+      titulo: 'Instalación nuevo equipo',
+      descripcion: 'Instalación de bomba de agua',
+      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 20, 10, 0).toISOString(),
+      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 20, 13, 0).toISOString(),
+      estado: 'PROGRAMADO'
+    },
+    {
+      id: 4,
+      idCliente: 4,
+      idTecnico: 1,
+      tipoEvento: 'EMERGENCIA',
+      titulo: 'Emergencia por inundación',
+      descripcion: 'Sistema de drenaje bloqueado',
+      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 22, 8, 0).toISOString(),
+      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 22, 12, 0).toISOString(),
+      estado: 'PROGRAMADO'
+    }
+  ];
+
   useEffect(() => {
     cargarDatos();
   }, [currentDate]);
 
   const cargarDatos = async () => {
     try {
-      const [clientesData, eventosData] = await Promise.all([
-        clientesService.getClientes(0, 100),
-        calendarioService.getEventos()
-      ]);
-      
-      setClientes(clientesData.content || []);
-      setEventos(eventosData || []);
+      // Usar datos ficticios en lugar de llamadas al API
+      setClientes(clientesFicticios);
+      setEventos(eventosFicticios);
     } catch (error) {
       console.error('Error cargando datos:', error);
+      // En caso de error, usar datos ficticios igualmente
+      setClientes(clientesFicticios);
+      setEventos(eventosFicticios);
     }
   };
 
@@ -88,13 +143,16 @@ const CalendarioView: React.FC = () => {
     
     const dias = [];
 
+    // Ajuste para que la semana empiece en Lunes (1)
+    const primerDiaAjustado = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
+
     // Días del mes anterior (para completar primera semana)
     const diasMesAnterior = getDiasEnMes(
-      month === 0 ? year - 1 : year, // Si es enero, año anterior
-      month === 0 ? 11 : month - 1   // Si es enero, diciembre
+      month === 0 ? year - 1 : year,
+      month === 0 ? 11 : month - 1
     );
 
-    for (let i = primerDiaSemana -2; i >= 0; i--) {
+    for (let i = primerDiaAjustado - 1; i >= 0; i--) {
       const dia = diasMesAnterior - i;
       const fecha = new Date(
         month === 0 ? year - 1 : year,
@@ -171,9 +229,19 @@ const CalendarioView: React.FC = () => {
     }
   };
 
+  const generarIdUnico = () => {
+    return Math.max(0, ...eventos.map(e => e.id)) + 1;
+  };
+
   const handleCrearEvento = async () => {
     try {
-      await calendarioService.createEvento(nuevoEvento);
+      const nuevoId = generarIdUnico();
+      const evento: EventoCalendario = {
+        id: nuevoId,
+        ...nuevoEvento
+      };
+      
+      setEventos(prev => [...prev, evento]);
       setShowNuevoEventoModal(false);
       setNuevoEvento({
         idCliente: 0,
@@ -185,9 +253,35 @@ const CalendarioView: React.FC = () => {
         fechaFin: '',
         estado: 'PROGRAMADO'
       });
-      cargarDatos();
+      
+      console.log('Evento creado:', evento);
     } catch (error) {
       console.error('Error creando evento:', error);
+    }
+  };
+
+  const handleEditarEvento = async () => {
+    if (!eventoEditando) return;
+    
+    try {
+      setEventos(prev => prev.map(evento => 
+        evento.id === eventoEditando.id ? eventoEditando : evento
+      ));
+      
+      setShowEditarEventoModal(false);
+      setEventoEditando(null);
+      console.log('Evento actualizado:', eventoEditando);
+    } catch (error) {
+      console.error('Error editando evento:', error);
+    }
+  };
+
+  const handleEliminarEvento = async (id: number) => {
+    try {
+      setEventos(prev => prev.filter(evento => evento.id !== id));
+      console.log('Evento eliminado:', id);
+    } catch (error) {
+      console.error('Error eliminando evento:', error);
     }
   };
 
@@ -205,6 +299,12 @@ const CalendarioView: React.FC = () => {
     }));
     
     setShowNuevoEventoModal(true);
+    setShowEventosModal(false);
+  };
+
+  const abrirEditarEvento = (evento: EventoCalendario) => {
+    setEventoEditando(evento);
+    setShowEditarEventoModal(true);
     setShowEventosModal(false);
   };
 
@@ -252,25 +352,25 @@ const CalendarioView: React.FC = () => {
           </div>
         </div>
 
-        {/* Leyenda de eventos */}
-        <div className="flex items-center gap-4 mb-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#28a745]"></div>
-            <span>Mantención</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#dc3545]"></div>
-            <span>Reparación</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ffc107]"></div>
-            <span>Emergencia</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#17a2b8]"></div>
-            <span>Instalación</span>
-          </div>
-        </div>
+{/* Leyenda de eventos */}
+<div className="leyenda-container">
+  <div className="leyenda-item">
+    <div className="leyenda-color leyenda-mantenimiento"></div>
+    <span>Mantención</span>
+  </div>
+  <div className="leyenda-item">
+    <div className="leyenda-color leyenda-reparacion"></div>
+    <span>Reparación</span>
+  </div>
+  <div className="leyenda-item">
+    <div className="leyenda-color leyenda-emergencia"></div>
+    <span>Emergencia</span>
+  </div>
+  <div className="leyenda-item">
+    <div className="leyenda-color leyenda-instalacion"></div>
+    <span>Instalación</span>
+  </div>
+</div>
       </div>
 
       {/* Grid del Calendario */}
@@ -400,6 +500,20 @@ const CalendarioView: React.FC = () => {
                           )}
                         </div>
                       </div>
+                      <div className="card-footer">
+                        <button 
+                          className="btn btn-warning btn-sm"
+                          onClick={() => abrirEditarEvento(evento)}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleEliminarEvento(evento.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -527,6 +641,132 @@ const CalendarioView: React.FC = () => {
                 disabled={!nuevoEvento.titulo || !nuevoEvento.idCliente || !nuevoEvento.fechaInicio}
               >
                 Crear Evento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Editar Evento */}
+      {showEditarEventoModal && eventoEditando && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Editar Evento</h3>
+              <button 
+                className="close-btn"
+                onClick={() => setShowEditarEventoModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Título:</label>
+                <input
+                  type="text"
+                  className="input"
+                  value={eventoEditando.titulo}
+                  onChange={(e) => setEventoEditando({...eventoEditando, titulo: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Cliente:</label>
+                <select
+                  className="input"
+                  value={eventoEditando.idCliente}
+                  onChange={(e) => setEventoEditando({...eventoEditando, idCliente: parseInt(e.target.value)})}
+                >
+                  {clientes.map(cliente => (
+                    <option key={cliente.idCliente} value={cliente.idCliente}>
+                      {cliente.nombre1}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Tipo de Evento:</label>
+                <select
+                  className="input"
+                  value={eventoEditando.tipoEvento}
+                  onChange={(e) => setEventoEditando({...eventoEditando, tipoEvento: e.target.value})}
+                >
+                  <option value="MANTENCION">Mantención</option>
+                  <option value="REPARACION">Reparación</option>
+                  <option value="EMERGENCIA">Emergencia</option>
+                  <option value="INSTALACION">Instalación</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label>Fecha y Hora Inicio:</label>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={eventoEditando.fechaInicio.slice(0, 16)}
+                    onChange={(e) => setEventoEditando({...eventoEditando, fechaInicio: e.target.value})}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Fecha y Hora Fin:</label>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={eventoEditando.fechaFin.slice(0, 16)}
+                    onChange={(e) => setEventoEditando({...eventoEditando, fechaFin: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Descripción:</label>
+                <textarea
+                  className="input"
+                  value={eventoEditando.descripcion}
+                  onChange={(e) => setEventoEditando({...eventoEditando, descripcion: e.target.value})}
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Estado:</label>
+                <select
+                  className="input"
+                  value={eventoEditando.estado}
+                  onChange={(e) => setEventoEditando({...eventoEditando, estado: e.target.value})}
+                >
+                  <option value="PROGRAMADO">Programado</option>
+                  <option value="EN_PROCESO">En Proceso</option>
+                  <option value="COMPLETADO">Completado</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowEditarEventoModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn btn-danger"
+                onClick={() => handleEliminarEvento(eventoEditando.id)}
+              >
+                Eliminar
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={handleEditarEvento}
+                disabled={!eventoEditando.titulo || !eventoEditando.idCliente || !eventoEditando.fechaInicio}
+              >
+                Guardar Cambios
               </button>
             </div>
           </div>

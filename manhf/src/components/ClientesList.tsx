@@ -1,12 +1,12 @@
-// src/components/ClienteList.tsx
+// src/components/ClientesList.tsx
 import React from 'react';
 
 interface Cliente {
   idCliente: number;
-  n_cliente: number;
+  ncliente: number;
+  rut: string;
   nombre1: string;
   nombre2?: string;
-  rut: string;
   telefono1: string;
   telefono2?: string;
   correo: string;
@@ -29,94 +29,95 @@ export const ClienteList: React.FC<ClienteListProps> = ({
   onDeleteCliente
 }) => {
   if (loading) {
-    return <div className="text-center py-4">Cargando clientes...</div>;
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Cargando clientes...</p>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-        {error}
+      <div className="error-message">
+        Error al cargar clientes: {error}
       </div>
     );
   }
 
   if (clientes.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No hay clientes registrados
+      <div className="empty-state">
+        <p>No hay clientes registrados</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-200">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              N° Cliente
-            </th>
-            <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Nombre
-            </th>
-            <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              RUT
-            </th>
-            <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Teléfono
-            </th>
-            <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Email
-            </th>
-            <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Acciones
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {clientes.map((cliente) => (
-            <tr key={cliente.idCliente} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {cliente.n_cliente}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <div>
-                  <div className="font-medium">{cliente.nombre1}</div>
-                  {cliente.nombre2 && (
-                    <div className="text-gray-500 text-xs">{cliente.nombre2}</div>
-                  )}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {cliente.rut}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <div>{cliente.telefono1}</div>
-                {cliente.telefono2 && (
-                  <div className="text-gray-500 text-xs">{cliente.telefono2}</div>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {cliente.correo}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button
-                  onClick={() => onEditCliente(cliente)}
-                  className="text-indigo-600 hover:text-indigo-900"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => onDeleteCliente(cliente.idCliente)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Eliminar
-                </button>
-              </td>
+    <div className="tabla-container">
+      <div className="tabla-header">
+        Total: {clientes.length} cliente{clientes.length !== 1 ? 's' : ''}
+      </div>
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>N° Cliente</th>
+              <th>Información</th>
+              <th>Contacto</th>
+              <th>RUT</th>
+              <th>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {clientes.map((cliente) => (
+              <tr key={cliente.idCliente}>
+                <td>
+                  <div className="numero-cliente">{cliente.ncliente}</div>
+                </td>
+                <td>
+                  <div className="cliente-nombre">
+                    <div className="nombre-principal">{cliente.nombre1}</div>
+                    {cliente.nombre2 && (
+                      <div className="nombre-alternativo">{cliente.nombre2}</div>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <div className="telefonos">
+                    <div>{cliente.telefono1}</div>
+                    {cliente.telefono2 && (
+                      <div className="telefono-secundario">{cliente.telefono2}</div>
+                    )}
+                  </div>
+                  <div className="email">{cliente.correo}</div>
+                </td>
+                <td>
+                  <div className="rut">{cliente.rut}</div>
+                </td>
+                <td>
+                  <div className="acciones">
+                    <button
+                      onClick={() => onEditCliente(cliente)}
+                      className="btn-action btn-edit"
+                      title="Editar cliente"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => onDeleteCliente(cliente.idCliente)}
+                      className="btn-action btn-delete"
+                      title="Eliminar cliente"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

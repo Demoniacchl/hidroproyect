@@ -1,24 +1,47 @@
-// components/ClienteForm.tsx
+// src/components/ClientesForm.tsx
 import React, { useState, useEffect } from 'react';
-import { Cliente } from '../services/clientes.service';
+import type { ClienteCreateRequest } from '../services/clientes.service';
 
 interface ClienteFormProps {
-  cliente?: Cliente | null;
-  onSubmit: (clienteData: Omit<Cliente, 'idCliente'>) => void;
-  onCancel: () => void;
+  cliente?: any;
+  onSubmit: (data: ClienteCreateRequest) => void;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
 }
 
-export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState({
-    n_cliente: cliente?.n_cliente || 0,
-    nombre1: cliente?.nombre1 || '',
-    nombre2: cliente?.nombre2 || '',
-    rut: cliente?.rut || '',
-    telefono1: cliente?.telefono1 || '',
-    telefono2: cliente?.telefono2 || '',
-    correo: cliente?.correo || '',
-    observaciones: cliente?.observaciones || ''
+const ClienteForm: React.FC<ClienteFormProps> = ({
+  cliente,
+  onSubmit,
+  onClose,
+  loading,
+  error
+}) => {
+  const [formData, setFormData] = useState<ClienteCreateRequest>({
+    ncliente: 0,
+    rut: '',
+    nombre1: '',
+    nombre2: '',
+    telefono1: '',
+    telefono2: '',
+    correo: '',
+    observaciones: ''
   });
+
+  useEffect(() => {
+    if (cliente) {
+      setFormData({
+        ncliente: cliente.ncliente || '',
+        rut: cliente.rut || '',
+        nombre1: cliente.nombre1 || '',
+        nombre2: cliente.nombre2 || '',
+        telefono1: cliente.telefono1 || '',
+        telefono2: cliente.telefono2 || '',
+        correo: cliente.correo || '',
+        observaciones: cliente.observaciones || ''
+      });
+    }
+  }, [cliente]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,67 +52,145 @@ export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmit, onC
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'n_cliente' ? parseInt(value) || 0 : value
+      [name]: value
     }));
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">
-          {cliente ? 'Editar Cliente' : 'Nuevo Cliente'}
-        </h2>
+    <div className="modal-overlay">
+      <div className="modal modal-lg">
+        <div className="modal-header">
+          <h3>{cliente ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
+          <button onClick={onClose} className="close-btn">×</button>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">N° Cliente</label>
-            <input
-              type="number"
-              name="n_cliente"
-              value={formData.n_cliente}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-              required
-            />
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+            
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="ncliente">Número de Cliente *</label>
+                <input
+                  type="text"
+                  id="ncliente"
+                  name="ncliente"
+                  value={formData.ncliente}
+                  onChange={handleChange}
+                  required
+                  placeholder="9"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="rut">RUT *</label>
+                <input
+                  type="text"
+                  id="rut"
+                  name="rut"
+                  value={formData.rut}
+                  onChange={handleChange}
+                  required
+                  placeholder="12.345.678-9"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="nombre1">Nombre Principal *</label>
+                <input
+                  type="text"
+                  id="nombre1"
+                  name="nombre1"
+                  value={formData.nombre1}
+                  onChange={handleChange}
+                  required
+                  placeholder="Nombre o razón social"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="nombre2">Nombre Alternativo</label>
+                <input
+                  type="text"
+                  id="nombre2"
+                  name="nombre2"
+                  value={formData.nombre2}
+                  onChange={handleChange}
+                  placeholder="Nombre secundario (opcional)"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="telefono1">Teléfono Principal *</label>
+                <input
+                  type="tel"
+                  id="telefono1"
+                  name="telefono1"
+                  value={formData.telefono1}
+                  onChange={handleChange}
+                  required
+                  placeholder="+56 9 1234 5678"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="telefono2">Teléfono Secundario</label>
+                <input
+                  type="tel"
+                  id="telefono2"
+                  name="telefono2"
+                  value={formData.telefono2}
+                  onChange={handleChange}
+                  placeholder="Teléfono adicional (opcional)"
+                />
+              </div>
+              
+              <div className="form-group full-width">
+                <label htmlFor="correo">Correo Electrónico *</label>
+                <input
+                  type="email"
+                  id="correo"
+                  name="correo"
+                  value={formData.correo}
+                  onChange={handleChange}
+                  required
+                  placeholder="cliente@empresa.cl"
+                />
+              </div>
+              
+              <div className="form-group full-width">
+                <label htmlFor="observaciones">Observaciones</label>
+                <textarea
+                  id="observaciones"
+                  name="observaciones"
+                  value={formData.observaciones}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Información adicional del cliente..."
+                />
+              </div>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre Principal</label>
-            <input
-              type="text"
-              name="nombre1"
-              value={formData.nombre1}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">RUT</label>
-            <input
-              type="text"
-              name="rut"
-              value={formData.rut}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-              required
-            />
-          </div>
-
-          <div className="flex space-x-4">
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              {cliente ? 'Actualizar' : 'Crear'}
-            </button>
+          
+          <div className="modal-footer">
             <button
               type="button"
-              onClick={onCancel}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+              onClick={onClose}
+              className="btn btn-outline"
+              disabled={loading}
             >
               Cancelar
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? 'Guardando...' : (cliente ? 'Actualizar' : 'Crear')} Cliente
             </button>
           </div>
         </form>
@@ -97,4 +198,5 @@ export const ClienteForm: React.FC<ClienteFormProps> = ({ cliente, onSubmit, onC
     </div>
   );
 };
+
 export default ClienteForm;

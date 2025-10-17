@@ -3,11 +3,15 @@ package com.hidro.manh.srs;
 import com.hidro.manh.ety.OrdenReparacion;
 import com.hidro.manh.ety.EquipoMotor;
 import com.hidro.manh.ety.Usuario;
+import com.hidro.manh.ety.Cliente;
+import com.hidro.manh.ety.Ubicacion;
 import com.hidro.manh.dto.OrdenReparacionDto;
 import com.hidro.manh.enums.ProgresoReparacion;
 import com.hidro.manh.rep.OrdenReparacionRepository;
 import com.hidro.manh.rep.EquipoMotorRepository;
 import com.hidro.manh.rep.UsuarioRepository;
+import com.hidro.manh.rep.ClienteRepository;
+import com.hidro.manh.rep.UbicacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +33,12 @@ public class OrdenReparacionService {
     
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private UbicacionRepository ubicacionRepository;
 
     // MÉTODOS CRUD
     public Optional<OrdenReparacion> findById(Long id) {
@@ -76,6 +86,8 @@ public class OrdenReparacionService {
             .observaciones(entity.getObservaciones())
             .progreso(entity.getProgreso())
             .firmaCliente(entity.getFirmaCliente())
+            .idCliente(entity.getCliente() != null ? entity.getCliente().getIdCliente() : null)
+            .idUbicacion(entity.getUbicacion() != null ? entity.getUbicacion().getIdUbicacion() : null) // ← NUEVO: AÑADIDO idUbicacion
             .build();
     }
     
@@ -100,6 +112,19 @@ public class OrdenReparacionService {
             Usuario tecnico = usuarioRepository.findById(dto.getIdTecnico())
                 .orElseThrow(() -> new RuntimeException("Técnico no encontrado con ID: " + dto.getIdTecnico()));
             entity.setTecnico(tecnico);
+        }
+        
+        if (dto.getIdCliente() != null) {
+            Cliente cliente = clienteRepository.findById(dto.getIdCliente())
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + dto.getIdCliente()));
+            entity.setCliente(cliente);
+        }
+        
+        // NUEVO: CARGAR UBICACIÓN
+        if (dto.getIdUbicacion() != null) {
+            Ubicacion ubicacion = ubicacionRepository.findById(dto.getIdUbicacion())
+                .orElseThrow(() -> new RuntimeException("Ubicación no encontrada con ID: " + dto.getIdUbicacion()));
+            entity.setUbicacion(ubicacion);
         }
         
         return entity;

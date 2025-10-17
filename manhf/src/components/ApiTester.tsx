@@ -110,12 +110,12 @@ const ApiTester: React.FC = () => {
         <label className="block text-sm font-medium mb-2">Ejemplos rápidos:</label>
         <div className="flex flex-wrap gap-2">
           {[
-            'ordenes-mantenimiento',
-            'ordenes-reparacion',
-            'clientes',
-            'tecnicos',
-            'equipos',
-            'ubicaciones'
+            '/ordenes-mantenimiento',
+            '/ordenes-reparacion',
+            '/clientes',
+            '/tecnicos',
+            '/equipos',
+            '/ubicaciones'
           ].map(example => (
             <button
               key={example}
@@ -154,7 +154,7 @@ const ApiTester: React.FC = () => {
             </span>
             <input
               type="text"
-              value= {"/" + endpoint}
+              value= {endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="ordenes-mantenimiento"
@@ -167,7 +167,7 @@ const ApiTester: React.FC = () => {
       {/* Body para POST/PUT */}
       {(method === 'POST' || method === 'PUT') && (
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm font-medium mb-4">
             Cuerpo (JSON) {method === 'POST' ? '(para crear)' : '(para actualizar)'}
           </label>
           <textarea
@@ -175,13 +175,13 @@ const ApiTester: React.FC = () => {
             onChange={(e) => setRequestBody(e.target.value)}
             placeholder='{"clave": "valor"}'
             rows={4}
-            className="w-full p-2 border rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="m:col-span-4 p-2 border rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       )}
 
       {/* Botón ejecutar */}
-      <div className="mb-4">
+      <div className="md:col-span-4">
         <button
           onClick={testEndpoint}
           disabled={loading || !endpoint.trim()}
@@ -204,7 +204,7 @@ const ApiTester: React.FC = () => {
           <div className="bg-green-50 px-4 py-2 border-b">
             <h3 className="font-bold text-green-800">✅ Respuesta Exitosa</h3>
           </div>
-          <pre className="p-4 bg-white overflow-auto max-h-96 text-sm">
+          <pre className="p-2 bg-white overflow-auto max-h-96 text-sm">
             {formatJson(response)}
           </pre>
         </div>

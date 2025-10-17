@@ -223,17 +223,17 @@ const OrdenesHistorialView: React.FC = () => {
               </div>
             ) : (
               mantencionesFiltradas.map((orden) => (
-                <div key={orden.id_orden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
+                <div key={orden.idOrden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
                   <div className="p-4 border-b">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-lg">Orden #{orden.id_orden}</h3>
+                        <h3 className="font-semibold text-lg">Orden #{orden.idOrden}</h3>
                         <p className="text-gray-600 text-sm">
-                          {orden.cliente?.nombre1} • {orden.ubicacion?.nombre}
+                          Cliente ID: {orden.idCliente} #### • Motor ID: {orden.idMotor} #### • Técnico ID: {orden.idTecnico} ####
                         </p>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getTipoOrdenColor(orden.tipo_orden)}`}>
-                        {orden.tipo_orden}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getTipoOrdenColor(orden.tipoOrden)}`}>
+                        {orden.tipoOrden}
                       </span>
                     </div>
                   </div>
@@ -242,22 +242,22 @@ const OrdenesHistorialView: React.FC = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Equipo:</span>
-                        <span className="font-medium">{orden.equipo?.marca} {orden.equipo?.modelo}</span>
+                        <span className="font-medium">Motor ID: {orden.idMotor} </span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-600">Técnico:</span>
-                        <span className="font-medium">{orden.tecnico?.nombre}</span>
+                        <span className="font-medium">Técnico ID: {orden.idTecnico} </span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-600">Fecha:</span>
-                        <span className="font-medium">{formatFecha(orden.hora_ingreso)}</span>
+                        <span className="font-medium">{formatFecha(orden.horaIngreso)}</span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-600">Horario:</span>
-                        <span className="font-medium">{formatHora(orden.hora_ingreso)} - {formatHora(orden.hora_salida)}</span>
+                        <span className="font-medium">{formatHora(orden.horaIngreso)} - {formatHora(orden.horaSalida)}</span>
                       </div>
 
                       {orden.observaciones && (
@@ -303,13 +303,13 @@ const OrdenesHistorialView: React.FC = () => {
               </div>
             ) : (
               reparacionesFiltradas.map((orden) => (
-                <div key={orden.id_orden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
+                <div key={orden.idOrden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
                   <div className="p-4 border-b">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-lg">Orden #{orden.id_orden}</h3>
+                        <h3 className="font-semibold text-lg">Orden #{orden.idOrden}</h3>
                         <p className="text-gray-600 text-sm">
-                          {orden.cliente?.id_cliente} • {orden.ubicacion?.nombre}
+                          Cliente ID: {orden.idCliente} • Motor ID: {orden.idMotor}  • Técnico ID: {orden.idTecnico} 
                         </p>
                       </div>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getProgresoColor(orden.progreso)}`}>
@@ -322,12 +322,12 @@ const OrdenesHistorialView: React.FC = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Equipo:</span>
-                        <span className="font-medium">{orden.equipo?.marca} {orden.equipo?.modelo}</span>
+                        <span className="font-medium">Motor ID: {orden.idMotor} ####</span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-600">Técnico:</span>
-                        <span className="font-medium">{orden.tecnico?.nombre}</span>
+                        <span className="font-medium">Técnico ID: {orden.idTecnico} ####</span>
                       </div>
                       
                       <div className="flex">

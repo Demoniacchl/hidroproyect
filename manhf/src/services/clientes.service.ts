@@ -2,7 +2,7 @@ import { apiClient } from './api';
 
 export interface Cliente {
   idCliente: number;
-  n_cliente: number;
+  ncliente: number;
   nombre1: string;
   nombre2?: string;
   rut: string;
@@ -13,7 +13,7 @@ export interface Cliente {
 }
 
 export interface ClienteCreateRequest {
-  n_cliente: number;
+  ncliente: number;
   nombre1: string;
   nombre2?: string;
   rut: string;
@@ -24,7 +24,7 @@ export interface ClienteCreateRequest {
 }
 
 export interface ClienteUpdateRequest {
-  n_cliente?: number;
+  ncliente?: number;
   nombre1?: string;
   nombre2?: string;
   rut?: string;
@@ -34,24 +34,10 @@ export interface ClienteUpdateRequest {
   observaciones?: string;
 }
 
-export interface PaginatedClientes {
-  content: Cliente[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-}
-
 export const clientesService = {
-  // Listar clientes (paginado)
-  async getClientes(
-    page: number = 0, 
-    size: number = 20, 
-    sort: string = 'nombre1,asc'
-  ): Promise<PaginatedClientes> {
-    return apiClient.get(`/clientes?page=${page}&size=${size}&sort=${sort}`);
+  // Listar todos los clientes (sin paginación)
+  async getClientes(): Promise<Cliente[]> {
+    return apiClient.get('/clientes');
   },
 
   // Buscar cliente por número
@@ -89,10 +75,10 @@ export const clientesService = {
     return apiClient.delete(`/clientes/${id}`);
   },
 
-  // Buscar clientes por nombre (si el backend lo soporta)
+  // Buscar clientes por nombre o RUT
   async searchClientes(query: string): Promise<Cliente[]> {
-    const response = await this.getClientes(0, 100);
-    return response.content.filter(cliente =>
+    const clientes = await this.getClientes();
+    return clientes.filter(cliente =>
       cliente.nombre1.toLowerCase().includes(query.toLowerCase()) ||
       cliente.nombre2?.toLowerCase().includes(query.toLowerCase()) ||
       cliente.rut.includes(query)

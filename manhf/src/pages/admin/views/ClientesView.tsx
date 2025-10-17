@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useClientes } from '../../../hooks/useClientes';
 import { ClienteList } from '../../../components/ClientesList';
 import type { ClienteCreateRequest } from '../../../services/clientes.service';
+import ClienteForm from '../../../components/ClienteForm';
 
 const ClientesView: React.FC = () => {
   const { 
@@ -15,14 +16,21 @@ const ClientesView: React.FC = () => {
   } = useClientes();
   
   const [showForm, setShowForm] = useState(false);
+  const [editingCliente, setEditingCliente] = useState<any>(null);
 
   const handleCreateCliente = async (clienteData: ClienteCreateRequest) => {
     try {
       await createCliente(clienteData);
       setShowForm(false);
+      setEditingCliente(null);
     } catch (err) {
       console.error('Error creando cliente:', err);
     }
+  };
+
+  const handleEditCliente = (cliente: any) => {
+    setEditingCliente(cliente);
+    setShowForm(true);
   };
 
   const handleDeleteCliente = async (id: number) => {
@@ -37,28 +45,30 @@ const ClientesView: React.FC = () => {
 
   const handleCloseForm = () => {
     setShowForm(false);
+    setEditingCliente(null);
     clearError();
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
+    <div className="clientes-view">
+      <div className="view-header">
+        <h1>Gestión de Clientes</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="btn btn-primary"
           disabled={loading}
         >
-          {loading ? 'Cargando...' : 'Nuevo Cliente'}
+          <span>+</span>
+          Nuevo Cliente
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="error-message">
           {error}
           <button 
             onClick={clearError}
-            className="float-right font-bold"
+            className="close-btn"
           >
             ×
           </button>
@@ -69,9 +79,19 @@ const ClientesView: React.FC = () => {
         clientes={clientes}
         loading={loading}
         error={error}
-        onEditCliente={(cliente) => console.log('Editar:', cliente)}
+        onEditCliente={handleEditCliente}
         onDeleteCliente={handleDeleteCliente}
       />
+
+      {(showForm || editingCliente) && (
+        <ClienteForm
+          cliente={editingCliente}
+          onSubmit={handleCreateCliente}
+          onClose={handleCloseForm}
+          loading={loading}
+          error={error}
+        />
+      )}
     </div>
   );
 };

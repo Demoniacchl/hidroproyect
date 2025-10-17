@@ -12,9 +12,10 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 public class Cliente {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_cliente")
     private Long idCliente;
-@Column(name = "n_cliente") 
+@Column(name = "n_cliente", nullable = true)
     private Integer ncliente;
     private String nombre1;
     private String rut;

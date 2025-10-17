@@ -3,12 +3,16 @@ package com.hidro.manh.srs;
 import com.hidro.manh.ety.OrdenMantenimiento;
 import com.hidro.manh.ety.EquipoMotor;
 import com.hidro.manh.ety.Usuario;
+import com.hidro.manh.ety.Cliente;
+import com.hidro.manh.ety.Ubicacion;
 import com.hidro.manh.dto.OrdenMantenimientoDto;
 import com.hidro.manh.enums.EstadoMantenimiento;
 import com.hidro.manh.enums.TipoOrden;
 import com.hidro.manh.rep.OrdenMantenimientoRepository;
 import com.hidro.manh.rep.EquipoMotorRepository;
 import com.hidro.manh.rep.UsuarioRepository;
+import com.hidro.manh.rep.ClienteRepository;
+import com.hidro.manh.rep.UbicacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +35,12 @@ public class OrdenMantenimientoService {
     
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private UbicacionRepository ubicacionRepository;
 
     // MÉTODOS CRUD
     public List<OrdenMantenimiento> getAll() {
@@ -103,6 +113,20 @@ public class OrdenMantenimientoService {
             entity.setTecnico(tecnico);
         }
         
+        // NUEVO: CARGAR CLIENTE
+        if (dto.getIdCliente() != null) {
+            Cliente cliente = clienteRepository.findById(dto.getIdCliente())
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + dto.getIdCliente()));
+            entity.setCliente(cliente);
+        }
+        
+        // NUEVO: CARGAR UBICACIÓN
+        if (dto.getIdUbicacion() != null) {
+            Ubicacion ubicacion = ubicacionRepository.findById(dto.getIdUbicacion())
+                .orElseThrow(() -> new RuntimeException("Ubicación no encontrada con ID: " + dto.getIdUbicacion()));
+            entity.setUbicacion(ubicacion);
+        }
+        
         return entity;
     }
 
@@ -141,6 +165,8 @@ public class OrdenMantenimientoService {
             .revisoValvFlotador(entity.getRevisoValvFlotador())
             .revisoEstanqueAgua(entity.getRevisoEstanqueAgua())
             .revisoFittingsOtros(entity.getRevisoFittingsOtros())
+            .idCliente(entity.getCliente() != null ? entity.getCliente().getIdCliente() : null) // ← NUEVO
+            .idUbicacion(entity.getUbicacion() != null ? entity.getUbicacion().getIdUbicacion() : null) // ← NUEVO
             .build();
     }
 

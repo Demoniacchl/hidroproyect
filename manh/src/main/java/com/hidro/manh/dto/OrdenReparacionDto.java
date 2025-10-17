@@ -16,4 +16,6 @@ public class OrdenReparacionDto {
     private String observaciones;
     private ProgresoReparacion progreso;
     private String firmaCliente;
+    private Long idCliente;
+    private Long idUbicacion;
 }

@@ -38,4 +38,11 @@ public class OrdenReparacion {
 
     @Column(name = "firma_cliente", length = 200)
     private String firmaCliente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cliente")
+    private Cliente cliente;
+        @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_ubicacion")
+    private Ubicacion ubicacion;
 }
