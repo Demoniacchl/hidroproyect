@@ -360,5 +360,5 @@ export const ordenesService = {
       console.error(`Error searching órdenes for term: ${termino}:`, error);
       throw error;
     }
-  }
+  },
 };

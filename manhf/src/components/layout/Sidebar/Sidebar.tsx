@@ -23,12 +23,15 @@ const adminNavigation = [
 ];
 
   // Navegación específica para TÉCNICO
-  const tecnicoNavigation = [
-    { id: 'dashboard', label: 'Mi Panel', icon: '📊' },
-    { id: 'mantenciones', label: 'Mantenciones', icon: '🔧' },
-    { id: 'reparaciones', label: 'Reparaciones', icon: '🚨' },
-    { id: 'historial', label: 'Mi Historial', icon: '📋' },
-  ];
+const tecnicoNavigation = [
+  { id: 'dashboard', label: 'Mi Panel', icon: '📱' },
+  { id: 'tareas-hoy', label: 'Tareas de Hoy', icon: '📅' },
+  { id: 'tareas-pendientes', label: 'Tareas Pendientes', icon: '⏳' },
+  { id: 'nueva-mantencion', label: 'Nueva Mantención', icon: '🛠️' },
+  { id: 'nueva-reparacion', label: 'Nueva Reparación', icon: '🔧' },
+  { id: 'historial', label: 'Mi Historial', icon: '📋' },
+  { id: 'calendario', label: 'Mi Calendario', icon: '🗓️' },
+];
 
   // Navegación específica para SUPER_ADMIN
   const superAdminNavigation = [
