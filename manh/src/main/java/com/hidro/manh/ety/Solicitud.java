@@ -19,9 +19,9 @@ public class Solicitud {
     @Column(name = "id_solicitud")
     private Long idSolicitud;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_orden", unique = true)
-    private OrdenMantenimiento ordenMantenimiento;
+    // Cambiado: Ahora es un simple número, no una relación JPA
+    @Column(name = "id_orden")
+    private Long idOrden;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_orden")
@@ -39,4 +39,16 @@ public class Solicitud {
 
     @Column(name = "observaciones_admin", columnDefinition = "TEXT")
     private String observacionesAdmin;
+
+    // Método helper para obtener el tipo de entidad relacionada
+    public String getTipoEntidadOrden() {
+        return (tipoOrden == TipoOrden.MANTENIMIENTO) ? "mantenimiento" : "reparacion";
+    }
+
+    // Método helper para construir la URL del endpoint
+    public String getEndpointOrden() {
+        return (tipoOrden == TipoOrden.MANTENIMIENTO) 
+            ? "/api/ordenes-mantenimiento/" 
+            : "/api/ordenes-reparacion/";
+    }
 }

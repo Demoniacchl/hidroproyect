@@ -35,7 +35,7 @@ public class Calendario {
     private LocalDateTime fechaFin;
     
     @ManyToOne
-    @JoinColumn(name = "id_tecnico")
+    @JoinColumn(name = "id_tecnico", nullable = true)
     private Usuario tecnico;
     
     @Enumerated(EnumType.STRING)

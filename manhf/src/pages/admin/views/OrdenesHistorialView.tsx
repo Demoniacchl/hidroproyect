@@ -1,15 +1,28 @@
+// src/pages/admin/views/OrdenesHistorialView.tsx
 import React, { useState, useEffect } from 'react';
-import { ordenesService, OrdenMantencion, OrdenReparacion, OrdenFilters } from '../../../services/ordenes.service';
+import { ordenesService, OrdenMantencion, OrdenReparacion } from '../../../services/ordenes.service';
+
+interface OrdenCombinada {
+  id: string;
+  idOrden: number;
+  idCliente: number;
+  idMotor: number;
+  idTecnico: number;
+  tipo: 'MANTENCION' | 'REPARACION';
+  fecha: string;
+  observaciones?: string;
+  tipoOrden?: string;
+  progreso?: string;
+  horaIngreso?: string;
+  horaSalida?: string;
+}
 
 const OrdenesHistorialView: React.FC = () => {
-  const [mantenciones, setMantenciones] = useState<OrdenMantencion[]>([]);
-  const [reparaciones, setReparaciones] = useState<OrdenReparacion[]>([]);
+  const [ordenes, setOrdenes] = useState<OrdenCombinada[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   
-  // Estados de filtros
-  const [showMantencion, setShowMantencion] = useState(true);
-  const [showReparacion, setShowReparacion] = useState(true);
+  const [tipoFiltro, setTipoFiltro] = useState<'TODAS' | 'MANTENCION' | 'REPARACION'>('TODAS');
   const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
@@ -21,13 +34,7 @@ const OrdenesHistorialView: React.FC = () => {
       setLoading(true);
       setError('');
       
-      console.log('🔄 Iniciando carga de órdenes...');
-      
-      // Verificar autenticación primero
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No estás autenticado. Por favor inicia sesión.');
-      }
+      console.log('🔄 Cargando órdenes...');
 
       // Cargar ambas en paralelo
       const [mantencionesData, reparacionesData] = await Promise.all([
@@ -35,16 +42,59 @@ const OrdenesHistorialView: React.FC = () => {
         ordenesService.getReparaciones()
       ]);
       
-      setMantenciones(mantencionesData);
-      setReparaciones(reparacionesData);
+      console.log('📊 Datos recibidos:', {
+        mantenciones: mantencionesData.length,
+        reparaciones: reparacionesData.length
+      });
+
+      // DEBUG: Ver IDs de órdenes
+      console.log('🔍 IDs Mantenciones:', mantencionesData.map(m => m.idOrden));
+      console.log('🔍 IDs Reparaciones:', reparacionesData.map(r => r.idOrdenReparacion)); // ← CAMBIADO
+
+      // COMBINAR ÓRDENES CON IDs ÚNICOS
+      const ordenesCombinadas: OrdenCombinada[] = [];
+
+      // Agregar mantenciones con ID único "M-{idOrden}"
+      mantencionesData.forEach(orden => {
+        ordenesCombinadas.push({
+          id: `M-${orden.idOrden}`,
+          idOrden: orden.idOrden, // ← idOrden para mantención
+          idCliente: orden.idCliente,
+          idMotor: orden.idMotor,
+          idTecnico: orden.idTecnico,
+          tipo: 'MANTENCION',
+          fecha: orden.horaIngreso,
+          observaciones: orden.observaciones,
+          tipoOrden: orden.tipoOrden,
+          horaIngreso: orden.horaIngreso,
+          horaSalida: orden.horaSalida
+        });
+      });
+
+      // Agregar reparaciones con ID único "R-{idOrdenReparacion}"
+      reparacionesData.forEach(orden => {
+        ordenesCombinadas.push({
+          id: `R-${orden.idOrdenReparacion}`, // ← idOrdenReparacion para reparación
+          idOrden: orden.idOrdenReparacion, // ← idOrdenReparacion para reparación
+          idCliente: orden.idCliente,
+          idMotor: orden.idMotor,
+          idTecnico: orden.idTecnico,
+          tipo: 'REPARACION',
+          fecha: orden.fecha,
+          observaciones: orden.observaciones,
+          progreso: orden.progreso
+        });
+      });
+
+      console.log('✅ Órdenes combinadas:', ordenesCombinadas.length);
+      console.log('📋 Ejemplo de IDs:', ordenesCombinadas.slice(0, 3).map(o => o.id));
       
-      console.log(`✅ Carga exitosa: ${mantencionesData.length} mantenciones, ${reparacionesData.length} reparaciones`);
+      setOrdenes(ordenesCombinadas);
       
     } catch (error: any) {
       console.error('❌ Error cargando órdenes:', error);
       setError(error.message || 'Error al cargar las órdenes');
-      setMantenciones([]);
-      setReparaciones([]);
+      setOrdenes([]);
     } finally {
       setLoading(false);
     }
@@ -60,8 +110,40 @@ const OrdenesHistorialView: React.FC = () => {
       setLoading(true);
       const resultado = await ordenesService.buscarOrdenes(busqueda);
       
-      setMantenciones(resultado.mantenciones || []);
-      setReparaciones(resultado.reparaciones || []);
+      // Reconstruir el array combinado con los resultados filtrados
+      const ordenesFiltradas: OrdenCombinada[] = [];
+      
+      resultado.mantenciones?.forEach(orden => {
+        ordenesFiltradas.push({
+          id: `M-${orden.idOrden}`,
+          idOrden: orden.idOrden,
+          idCliente: orden.idCliente,
+          idMotor: orden.idMotor,
+          idTecnico: orden.idTecnico,
+          tipo: 'MANTENCION',
+          fecha: orden.horaIngreso,
+          observaciones: orden.observaciones,
+          tipoOrden: orden.tipoOrden,
+          horaIngreso: orden.horaIngreso,
+          horaSalida: orden.horaSalida
+        });
+      });
+
+      resultado.reparaciones?.forEach(orden => {
+        ordenesFiltradas.push({
+          id: `R-${orden.idOrdenReparacion}`, // ← CAMBIADO
+          idOrden: orden.idOrdenReparacion, // ← CAMBIADO
+          idCliente: orden.idCliente,
+          idMotor: orden.idMotor,
+          idTecnico: orden.idTecnico,
+          tipo: 'REPARACION',
+          fecha: orden.fecha,
+          observaciones: orden.observaciones,
+          progreso: orden.progreso
+        });
+      });
+
+      setOrdenes(ordenesFiltradas);
       
     } catch (error: any) {
       console.error('Error buscando órdenes:', error);
@@ -69,14 +151,6 @@ const OrdenesHistorialView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleToggleMantencion = () => {
-    setShowMantencion(!showMantencion);
-  };
-
-  const handleToggleReparacion = () => {
-    setShowReparacion(!showReparacion);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -87,11 +161,7 @@ const OrdenesHistorialView: React.FC = () => {
 
   const formatFecha = (fechaString: string) => {
     try {
-      return new Date(fechaString).toLocaleDateString('es-CL', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      return new Date(fechaString).toLocaleDateString('es-CL');
     } catch {
       return fechaString;
     }
@@ -110,270 +180,244 @@ const OrdenesHistorialView: React.FC = () => {
 
   const getProgresoColor = (progreso: string) => {
     switch (progreso?.toUpperCase()) {
-      case 'REALIZADO': return 'bg-green-100 text-green-800';
-      case 'EN_GESTION': return 'bg-yellow-100 text-yellow-800';
-      case 'NO_REALIZADO': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'REALIZADO': return 'estado-completado';
+      case 'EN_GESTION': return 'estado-proceso';
+      case 'NO_REALIZADO': return 'estado-pendiente';
+      default: return 'estado-default';
     }
   };
 
   const getTipoOrdenColor = (tipo: string) => {
     switch (tipo?.toUpperCase()) {
-      case 'PREVENTIVA': return 'bg-blue-100 text-blue-800';
-      case 'CORRECTIVA': return 'bg-orange-100 text-orange-800';
-      case 'EMERGENCIA': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'PREVENTIVA': return 'tipo-preventiva';
+      case 'CORRECTIVA': return 'tipo-correctiva';
+      case 'EMERGENCIA': return 'tipo-emergencia';
+      default: return 'tipo-default';
     }
   };
 
-  // Filtrar órdenes para mostrar según los toggles
-  const mantencionesFiltradas = showMantencion ? mantenciones : [];
-  const reparacionesFiltradas = showReparacion ? reparaciones : [];
+  const getTipoIcono = (tipo: string) => {
+    switch (tipo?.toUpperCase()) {
+      case 'MANTENCION': return '🔧';
+      case 'REPARACION': return '🛠️';
+      default: return '📋';
+    }
+  };
+
+  // Filtrar órdenes para mostrar
+  const ordenesFiltradas = ordenes.filter(orden => {
+    // Filtro por tipo
+    if (tipoFiltro !== 'TODAS' && orden.tipo !== tipoFiltro) {
+      return false;
+    }
+    
+    // Filtro por búsqueda
+    if (busqueda.trim()) {
+      const busquedaLower = busqueda.toLowerCase();
+      return (
+        orden.idOrden.toString().includes(busquedaLower) ||
+        orden.idCliente.toString().includes(busquedaLower) ||
+        orden.idMotor.toString().includes(busquedaLower) ||
+        orden.idTecnico.toString().includes(busquedaLower) ||
+        (orden.observaciones && orden.observaciones.toLowerCase().includes(busquedaLower)) ||
+        (orden.tipoOrden && orden.tipoOrden.toLowerCase().includes(busquedaLower)) ||
+        (orden.progreso && orden.progreso.toLowerCase().includes(busquedaLower))
+      );
+    }
+    
+    return true;
+  });
+
+  // Contadores para los filtros
+  const contadores = {
+    todas: ordenes.length,
+    mantencion: ordenes.filter(o => o.tipo === 'MANTENCION').length,
+    reparacion: ordenes.filter(o => o.tipo === 'REPARACION').length
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Cargando órdenes...</span>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Cargando órdenes...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="ordenes-historial-view">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">🛠️ Historial de Órdenes</h1>
-        
-        {/* Barra de búsqueda */}
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1">
+      <div className="view-header">
+        <div className="header-content">
+          <h1>Historial de Órdenes</h1>
+          <p>Gestión y consulta de órdenes de trabajo</p>
+        </div>
+      </div>
+
+      {/* Controles */}
+      <div className="controles-container">
+        <div className="filtros-row">
+          <div className="search-box">
             <input
               type="text"
-              placeholder="🔍 Buscar por cliente, ubicación, equipo..."
+              placeholder="Buscar por ID, cliente, equipo..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="search-input"
             />
+            <button className="btn-search" onClick={handleBuscar}>
+              🔍
+            </button>
           </div>
-          <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={handleBuscar}
-          >
-            Buscar
-          </button>
-          <button 
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            onClick={cargarOrdenes}
-          >
-            🔄 Actualizar
-          </button>
-        </div>
 
-        {/* Filtros Toggle */}
-        <div className="flex gap-4 mb-6">
-          <button
-            className={`px-4 py-2 rounded-lg ${
-              showMantencion 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-            onClick={handleToggleMantencion}
-          >
-            {showMantencion ? '✅ MANTENCIÓN' : '⬜ MANTENCIÓN'}
-          </button>
-          
-          <button
-            className={`px-4 py-2 rounded-lg ${
-              showReparacion 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-            onClick={handleToggleReparacion}
-          >
-            {showReparacion ? '✅ REPARACIÓN' : '⬜ REPARACIÓN'}
+          <div className="filtros-tipo">
+            <button 
+              className={`filtro-btn ${tipoFiltro === 'TODAS' ? 'active' : ''}`}
+              onClick={() => setTipoFiltro('TODAS')}
+            >
+              Todas ({contadores.todas})
+            </button>
+            <button 
+              className={`filtro-btn ${tipoFiltro === 'MANTENCION' ? 'active' : ''}`}
+              onClick={() => setTipoFiltro('MANTENCION')}
+            >
+              Mantención ({contadores.mantencion})
+            </button>
+            <button 
+              className={`filtro-btn ${tipoFiltro === 'REPARACION' ? 'active' : ''}`}
+              onClick={() => setTipoFiltro('REPARACION')}
+            >
+              Reparación ({contadores.reparacion})
+            </button>
+          </div>
+
+          <button className="btn-refresh" onClick={cargarOrdenes}>
+            🔄 Actualizar
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="error-message">
           <strong>Error:</strong> {error}
         </div>
       )}
 
-      {/* Grid de Órdenes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Columna Mantenciones */}
-        {showMantencion && (
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">📋 Órdenes de Mantención</h2>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {mantencionesFiltradas.length} órdenes
-                </span>
-              </div>
-            </div>
-
-            {mantencionesFiltradas.length === 0 ? (
-              <div className="bg-white p-8 rounded-lg shadow text-center">
-                <p className="text-gray-500">No hay órdenes de mantención</p>
-              </div>
+      {/* Tabla de Órdenes */}
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>ID Orden</th>
+              <th>Cliente</th>
+              <th>Equipo</th>
+              <th>Técnico</th>
+              <th>Fecha</th>
+              <th>Estado/Progreso</th>
+              <th>Observaciones</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ordenesFiltradas.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="empty-state">
+                  {busqueda ? 'No se encontraron órdenes con los filtros aplicados' : 'No hay órdenes registradas'}
+                </td>
+              </tr>
             ) : (
-              mantencionesFiltradas.map((orden) => (
-                <div key={orden.idOrden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="p-4 border-b">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-lg">Orden #{orden.idOrden}</h3>
-                        <p className="text-gray-600 text-sm">
-                          Cliente ID: {orden.idCliente} #### • Motor ID: {orden.idMotor} #### • Técnico ID: {orden.idTecnico} ####
-                        </p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getTipoOrdenColor(orden.tipoOrden)}`}>
-                        {orden.tipoOrden}
-                      </span>
+              ordenesFiltradas.map((orden) => (
+                <tr key={orden.id} className="orden-row">
+                  <td>
+                    <div className="tipo-orden">
+                      <span className="tipo-icono">{getTipoIcono(orden.tipo)}</span>
+                      <span className="tipo-texto">{orden.tipo}</span>
                     </div>
-                  </div>
-
-                  <div className="p-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Equipo:</span>
-                        <span className="font-medium">Motor ID: {orden.idMotor} </span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Técnico:</span>
-                        <span className="font-medium">Técnico ID: {orden.idTecnico} </span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Fecha:</span>
-                        <span className="font-medium">{formatFecha(orden.horaIngreso)}</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Horario:</span>
-                        <span className="font-medium">{formatHora(orden.horaIngreso)} - {formatHora(orden.horaSalida)}</span>
-                      </div>
-
-                      {orden.observaciones && (
-                        <div className="mt-3 pt-3 border-t">
-                          <span className="text-gray-600 block mb-1">Observaciones:</span>
-                          <p className="text-sm text-gray-700">{orden.observaciones}</p>
+                  </td>
+                  <td>
+                    <div className="numero-orden">#{orden.idOrden}</div>
+                    <div className="tipo-id" style={{fontSize: '0.7em', color: '#666'}}>
+                      ({orden.tipo === 'MANTENCION' ? 'M' : 'R'})
+                    </div>
+                  </td>
+                  <td>
+                    <div className="cliente-info">Cliente #{orden.idCliente}</div>
+                  </td>
+                  <td>
+                    <div className="equipo-info">Motor #{orden.idMotor}</div>
+                  </td>
+                  <td>
+                    <div className="tecnico-info">Técnico #{orden.idTecnico}</div>
+                  </td>
+                  <td>
+                    <div className="fecha-info">
+                      <div className="fecha">{formatFecha(orden.fecha)}</div>
+                      {orden.tipo === 'MANTENCION' && orden.horaIngreso && (
+                        <div className="hora">
+                          {formatHora(orden.horaIngreso)} - {orden.horaSalida ? formatHora(orden.horaSalida) : '--:--'}
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                        👁️ Ver Detalles
-                      </button>
-                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                        📄 Descargar PDF
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Columna Reparaciones */}
-        {showReparacion && (
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">🔧 Órdenes de Reparación</h2>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {reparacionesFiltradas.length} órdenes
-                </span>
-              </div>
-            </div>
-
-            {reparacionesFiltradas.length === 0 ? (
-              <div className="bg-white p-8 rounded-lg shadow text-center">
-                <p className="text-gray-500">No hay órdenes de reparación</p>
-              </div>
-            ) : (
-              reparacionesFiltradas.map((orden) => (
-                <div key={orden.idOrden} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="p-4 border-b">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-lg">Orden #{orden.idOrden}</h3>
-                        <p className="text-gray-600 text-sm">
-                          Cliente ID: {orden.idCliente} • Motor ID: {orden.idMotor}  • Técnico ID: {orden.idTecnico} 
-                        </p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getProgresoColor(orden.progreso)}`}>
-                        {orden.progreso}
+                  </td>
+                  <td>
+                    {orden.tipo === 'MANTENCION' ? (
+                      <span className={`badge ${getTipoOrdenColor(orden.tipoOrden || '')}`}>
+                        {orden.tipoOrden || 'MANTENCIÓN'}
                       </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Equipo:</span>
-                        <span className="font-medium">Motor ID: {orden.idMotor} ####</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Técnico:</span>
-                        <span className="font-medium">Técnico ID: {orden.idTecnico} ####</span>
-                      </div>
-                      
-                      <div className="flex">
-                        <span className="text-gray-600">Fecha:</span>
-                        <span className="font-medium">{formatFecha(orden.fecha)}</span>
-                      </div>
-
-                      {orden.observaciones && (
-                        <div className="mt-3 pt-3 border-t">
-                          <span className="text-gray-600 block mb-1">Observaciones:</span>
-                          <p className="text-sm text-gray-700">{orden.observaciones}</p>
-                        </div>
+                    ) : (
+                      <span className={`badge ${getProgresoColor(orden.progreso || '')}`}>
+                        {orden.progreso || 'PENDIENTE'}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="observaciones">
+                      {orden.observaciones ? (
+                        <span title={orden.observaciones}>
+                          {orden.observaciones.length > 50 
+                            ? `${orden.observaciones.substring(0, 50)}...` 
+                            : orden.observaciones
+                          }
+                        </span>
+                      ) : (
+                        <span className="text-muted">Sin observaciones</span>
                       )}
                     </div>
-                  </div>
-
-                  <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                        👁️ Ver Detalles
+                  </td>
+                  <td>
+                    <div className="acciones">
+                      <button className="btn-action btn-view" title="Ver detalles">
+                        👁️
                       </button>
-                      <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                        📄 Descargar PDF
+                      <button className="btn-action btn-download" title="Descargar PDF">
+                        📄
                       </button>
-                      {orden.progreso !== 'REALIZADO' && (
-                        <button className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">
-                          ✏️ Editar
+                      {(orden.tipo === 'REPARACION' && orden.progreso !== 'REALIZADO') && (
+                        <button className="btn-action btn-edit" title="Editar orden">
+                          ✏️
                         </button>
                       )}
                     </div>
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))
             )}
-          </div>
-        )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Mensaje cuando no hay nada seleccionado */}
-      {!showMantencion && !showReparacion && (
-        <div className="text-center py-8">
-          <p className="text-gray-500 text-lg">
-            Selecciona al menos un tipo de orden para visualizar
-          </p>
+      {/* Resumen */}
+      <div className="resumen-footer">
+        <div className="resumen-stats">
+          <span>Mostrando: {ordenesFiltradas.length} de {ordenes.length} órdenes</span>
+          <span className="stat-divider">|</span>
+          <span>Mantenciones: {contadores.mantencion}</span>
+          <span className="stat-divider">|</span>
+          <span>Reparaciones: {contadores.reparacion}</span>
         </div>
-      )}
+      </div>
     </div>
   );
 };

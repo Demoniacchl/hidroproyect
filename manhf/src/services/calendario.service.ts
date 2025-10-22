@@ -1,10 +1,10 @@
 import { apiClient } from './api';
 
 export interface EventoCalendario {
-  id: number;
+  idCalendario: number;
   idCliente: number;
-  idEquipo?: number;
-  idTecnico: number;
+  idEquipo?: number | null;
+  idTecnico: number | null;
   tipoEvento: string;
   titulo: string;
   descripcion: string;
@@ -15,8 +15,8 @@ export interface EventoCalendario {
 
 export interface EventoCreateRequest {
   idCliente: number;
-  idEquipo?: number;
-  idTecnico: number;
+  idEquipo?: number | null;
+  idTecnico: number | null;
   tipoEvento: string;
   titulo: string;
   descripcion: string;

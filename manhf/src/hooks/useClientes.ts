@@ -1,216 +1,255 @@
-// src/hooks/useClientes.ts
 import { useState, useEffect } from 'react';
-import {clientesService, Cliente, ClienteCreateRequest, ClienteUpdateRequest} from '../services/clientes.service';
+import { 
+  clientesService, 
+  Cliente, 
+  ClienteCreateRequest, 
+  ClienteUpdateRequest,
+  UbicacionCreateRequest,
+  MotorCreateRequest,
+  Region,
+  Comuna
+} from '../services/clientes.service';
 
-interface UseClientesReturn {
-  // Estado
-  clientes: Cliente[];
-  loading: boolean;
-  error: string | null;
-
-  // Acciones principales
-  loadClientes: () => Promise<void>;
-  createCliente: (clienteData: ClienteCreateRequest) => Promise<Cliente>;
-  updateCliente: (id: number, clienteData: ClienteUpdateRequest) => Promise<Cliente>;
-  deleteCliente: (id: number) => Promise<void>;
-
-  // Búsquedas y filtros
-  getClienteById: (id: number) => Promise<Cliente>;
-  searchByNumero: (nCliente: string) => Promise<Cliente>;
-  searchByNombre: (query: string) => Promise<Cliente[]>;
-  filterByRegion: (regionId: number) => Promise<Cliente[]>;
-  filterByComuna: (comunaId: number) => Promise<Cliente[]>;
-
-  // Utilidades
-  clearError: () => void;
-  refetch: () => Promise<void>;
-}
-
-export const useClientes = (): UseClientesReturn => {
+export const useClientes = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [clienteDetalle, setClienteDetalle] = useState<Cliente | null>(null);
+  const [regiones, setRegiones] = useState<Region[]>([]);
+  const [comunas, setComunas] = useState<Comuna[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
-  // Cargar todos los clientes
-  const loadClientes = async (): Promise<void> => {
+  // Cargar datos iniciales
+  useEffect(() => {
+    cargarDatosIniciales();
+  }, []);
+
+  const cargarDatosIniciales = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      console.log('🔄 Cargando clientes...');
-      const data = await clientesService.getClientes();
-
-      console.log('✅ Clientes cargados:', data.length);
-      setClientes(data);
-    } catch (err) {
-      console.error('❌ Error cargando clientes:', err);
-      setError(err instanceof Error ? err.message : 'Error al cargar los clientes');
+      
+      // Cargar clientes primero
+      const clientesData = await clientesService.getClientes();
+      setClientes(clientesData);
+      
+      // Intentar cargar regiones y comunas, pero no fallar si no existen
+      try {
+        const [regionesData, comunasData] = await Promise.all([
+          clientesService.getRegiones(),
+          clientesService.getComunas()
+        ]);
+        
+        setRegiones(regionesData);
+        setComunas(comunasData);
+      } catch (regionesError) {
+        console.warn('No se pudieron cargar regiones y comunas, usando valores por defecto');
+        // Los servicios ya manejan el fallo y devuelven valores por defecto
+      }
+      
+    } catch (err: any) {
+      setError('Error al cargar datos iniciales');
+      console.error('Error cargando datos:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Crear cliente
-  const createCliente = async (clienteData: ClienteCreateRequest): Promise<Cliente> => {
+  const cargarClientes = async () => {
     try {
-      setError(null);
-      console.log('🔄 Creando cliente:', clienteData);
+      setLoading(true);
+      setError('');
+      const data = await clientesService.getClientes();
+      setClientes(data);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar clientes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const getClienteConUbicaciones = async (id: number): Promise<Cliente> => {
+    try {
+      setLoading(true);
+      setError('');
+      const cliente = await clientesService.getCliente(id);
+      
+      // Cargar motores para cada ubicación
+      const ubicacionesConMotores = await Promise.all(
+        cliente.ubicaciones.map(async (ubicacion) => {
+          try {
+            const motores = await clientesService.getMotoresByUbicacion(ubicacion.idUbicacion);
+            return { ...ubicacion, motores };
+          } catch (error) {
+            console.error(`Error cargando motores para ubicación ${ubicacion.idUbicacion}:`, error);
+            return { ...ubicacion, motores: [] };
+          }
+        })
+      );
+      
+      return { ...cliente, ubicaciones: ubicacionesConMotores };
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar cliente');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadClienteDetalle = async (id: number) => {
+    try {
+      setLoading(true);
+      setError('');
+      const cliente = await getClienteConUbicaciones(id);
+      setClienteDetalle(cliente);
+      return cliente;
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar detalle del cliente');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createCliente = async (clienteData: ClienteCreateRequest) => {
+    try {
+      setLoading(true);
+      setError('');
       const nuevoCliente = await clientesService.createCliente(clienteData);
-      console.log('✅ Cliente creado:', nuevoCliente);
-
       setClientes(prev => [...prev, nuevoCliente]);
       return nuevoCliente;
-    } catch (err) {
-      console.error('❌ Error creando cliente:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al crear el cliente';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (err: any) {
+      setError(err.message || 'Error al crear cliente');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Actualizar cliente
-  const updateCliente = async (id: number, clienteData: ClienteUpdateRequest): Promise<Cliente> => {
+  const updateCliente = async (id: number, clienteData: ClienteUpdateRequest) => {
     try {
-      setError(null);
-      console.log('🔄 Actualizando cliente:', id, clienteData);
-
+      setLoading(true);
+      setError('');
       const clienteActualizado = await clientesService.updateCliente(id, clienteData);
-      console.log('✅ Cliente actualizado:', clienteActualizado);
-
-      setClientes(prev =>
-        prev.map(cliente =>
-          cliente.idCliente === id ? clienteActualizado : cliente
-        )
-      );
-
+      setClientes(prev => prev.map(c => c.idCliente === id ? clienteActualizado : c));
+      if (clienteDetalle && clienteDetalle.idCliente === id) {
+        setClienteDetalle(clienteActualizado);
+      }
       return clienteActualizado;
-    } catch (err) {
-      console.error('❌ Error actualizando cliente:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar el cliente';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (err: any) {
+      setError(err.message || 'Error al actualizar cliente');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Eliminar cliente
-  const deleteCliente = async (id: number): Promise<void> => {
+  const deleteCliente = async (id: number) => {
     try {
-      setError(null);
-      console.log('🔄 Eliminando cliente:', id);
-
+      setLoading(true);
+      setError('');
       await clientesService.deleteCliente(id);
-      console.log('✅ Cliente eliminado:', id);
-
-      setClientes(prev => prev.filter(cliente => cliente.idCliente !== id));
-    } catch (err) {
-      console.error('❌ Error eliminando cliente:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar el cliente';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      setClientes(prev => prev.filter(c => c.idCliente !== id));
+      if (clienteDetalle && clienteDetalle.idCliente === id) {
+        setClienteDetalle(null);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar cliente');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Buscar cliente por ID
-  const getClienteById = async (id: number): Promise<Cliente> => {
+  // Métodos para ubicaciones
+  const createUbicacion = async (ubicacionData: UbicacionCreateRequest) => {
     try {
-      setError(null);
-      return await clientesService.getCliente(id);
-    } catch (err) {
-      console.error('❌ Error obteniendo cliente por ID:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al obtener el cliente';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      setLoading(true);
+      const nuevaUbicacion = await clientesService.createUbicacion(ubicacionData);
+      
+      // Actualizar el cliente con la nueva ubicación
+      setClientes(prev => prev.map(cliente => 
+        cliente.idCliente === ubicacionData.idCliente 
+          ? { ...cliente, ubicaciones: [...cliente.ubicaciones, nuevaUbicacion] }
+          : cliente
+      ));
+      
+      // Actualizar también el cliente detalle si está cargado
+      if (clienteDetalle && clienteDetalle.idCliente === ubicacionData.idCliente) {
+        setClienteDetalle(prev => prev ? {
+          ...prev,
+          ubicaciones: [...prev.ubicaciones, nuevaUbicacion]
+        } : null);
+      }
+      
+      return nuevaUbicacion;
+    } catch (err: any) {
+      setError(err.message || 'Error al crear ubicación');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Buscar por número
-  const searchByNumero = async (nCliente: string): Promise<Cliente> => {
+  // Métodos para motores
+  const createMotor = async (motorData: MotorCreateRequest) => {
     try {
-      setError(null);
-      return await clientesService.getClienteByNumero(nCliente);
-    } catch (err) {
-      console.error('❌ Error buscando cliente por número:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al buscar el cliente';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      setLoading(true);
+      const nuevoMotor = await clientesService.createMotor(motorData);
+      
+      // Actualizar el cliente con el nuevo motor
+      setClientes(prev => prev.map(cliente => ({
+        ...cliente,
+        ubicaciones: cliente.ubicaciones.map(ubicacion =>
+          ubicacion.idUbicacion === motorData.idUbicacion
+            ? { 
+                ...ubicacion, 
+                motores: [...(ubicacion.motores || []), nuevoMotor] 
+              }
+            : ubicacion
+        )
+      })));
+      
+      // Actualizar también el cliente detalle si está cargado
+      if (clienteDetalle) {
+        const ubicacionActualizada = clienteDetalle.ubicaciones.map(ubicacion =>
+          ubicacion.idUbicacion === motorData.idUbicacion
+            ? { 
+                ...ubicacion, 
+                motores: [...(ubicacion.motores || []), nuevoMotor] 
+              }
+            : ubicacion
+        );
+        
+        setClienteDetalle(prev => prev ? { ...prev, ubicaciones: ubicacionActualizada } : null);
+      }
+      
+      return nuevoMotor;
+    } catch (err: any) {
+      setError(err.message || 'Error al crear motor');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Buscar por nombre
-  const searchByNombre = async (query: string): Promise<Cliente[]> => {
-    try {
-      setError(null);
-      return await clientesService.searchClientes(query);
-    } catch (err) {
-      console.error('❌ Error buscando clientes por nombre:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al buscar clientes';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
-
-  // Filtrar por región
-  const filterByRegion = async (regionId: number): Promise<Cliente[]> => {
-    try {
-      setError(null);
-      const clientesFiltrados = await clientesService.getClientesByRegion(regionId);
-      setClientes(clientesFiltrados);
-      return clientesFiltrados;
-    } catch (err) {
-      console.error('❌ Error filtrando clientes por región:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al filtrar clientes';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
-
-  // Filtrar por comuna
-  const filterByComuna = async (comunaId: number): Promise<Cliente[]> => {
-    try {
-      setError(null);
-      const clientesFiltrados = await clientesService.getClientesByComuna(comunaId);
-      setClientes(clientesFiltrados);
-      return clientesFiltrados;
-    } catch (err) {
-      console.error('❌ Error filtrando clientes por comuna:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al filtrar clientes';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
-
-  // Utilidades
-  const clearError = (): void => {
-    setError(null);
-  };
-
-  const refetch = async (): Promise<void> => {
-    await loadClientes();
-  };
-
-  // Cargar clientes al montar el hook
-  useEffect(() => {
-    loadClientes();
-  }, []);
+  const clearError = () => setError('');
+  const clearClienteDetalle = () => setClienteDetalle(null);
 
   return {
     clientes,
+    clienteDetalle,
+    regiones,
+    comunas,
     loading,
     error,
-
-    loadClientes,
     createCliente,
     updateCliente,
     deleteCliente,
-
-    getClienteById,
-    searchByNumero,
-    searchByNombre,
-    filterByRegion,
-    filterByComuna,
-
+    getClienteConUbicaciones,
+    loadClienteDetalle,
+    createUbicacion,
+    createMotor,
     clearError,
-    refetch
+    clearClienteDetalle,
+    refetch: cargarClientes
   };
 };

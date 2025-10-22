@@ -1,17 +1,5 @@
-// src/components/ClientesList.tsx
 import React from 'react';
-
-interface Cliente {
-  idCliente: number;
-  ncliente: number;
-  rut: string;
-  nombre1: string;
-  nombre2?: string;
-  telefono1: string;
-  telefono2?: string;
-  correo: string;
-  observaciones?: string;
-}
+import { Cliente } from '../services/clientes.service';
 
 interface ClienteListProps {
   clientes: Cliente[];
@@ -19,6 +7,7 @@ interface ClienteListProps {
   error: string | null;
   onEditCliente: (cliente: Cliente) => void;
   onDeleteCliente: (id: number) => void;
+  onViewUbicaciones: (cliente: Cliente) => void;
 }
 
 export const ClienteList: React.FC<ClienteListProps> = ({
@@ -26,7 +15,8 @@ export const ClienteList: React.FC<ClienteListProps> = ({
   loading,
   error,
   onEditCliente,
-  onDeleteCliente
+  onDeleteCliente,
+  onViewUbicaciones
 }) => {
   if (loading) {
     return (
@@ -40,73 +30,82 @@ export const ClienteList: React.FC<ClienteListProps> = ({
   if (error) {
     return (
       <div className="error-message">
-        Error al cargar clientes: {error}
-      </div>
-    );
-  }
-
-  if (clientes.length === 0) {
-    return (
-      <div className="empty-state">
-        <p>No hay clientes registrados</p>
+        <strong>Error:</strong> {error}
       </div>
     );
   }
 
   return (
-    <div className="tabla-container">
-      <div className="tabla-header">
-        Total: {clientes.length} cliente{clientes.length !== 1 ? 's' : ''}
-      </div>
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
+    <div className="table-container">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>RUT</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Ubicaciones</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {clientes.length === 0 ? (
             <tr>
-              <th>N° Cliente</th>
-              <th>Información</th>
-              <th>Contacto</th>
-              <th>RUT</th>
-              <th>Acciones</th>
+              <td colSpan={7} className="empty-state">
+                No hay clientes registrados
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {clientes.map((cliente) => (
-              <tr key={cliente.idCliente}>
+          ) : (
+            clientes.map((cliente) => (
+              <tr key={cliente.idCliente} className="cliente-row">
                 <td>
-                  <div className="numero-cliente">{cliente.ncliente}</div>
+                  <div className="numero-cliente">#{cliente.ncliente}</div>
                 </td>
                 <td>
                   <div className="cliente-nombre">
-                    <div className="nombre-principal">{cliente.nombre1}</div>
-                    {cliente.nombre2 && (
-                      <div className="nombre-alternativo">{cliente.nombre2}</div>
-                    )}
+                    <strong>{cliente.nombre1}</strong>
+                    {cliente.nombre2 && <div className="nombre-secundario">{cliente.nombre2}</div>}
                   </div>
                 </td>
                 <td>
-                  <div className="telefonos">
+                  <div className="cliente-rut">{cliente.rut}</div>
+                </td>
+                <td>
+                  <div className="cliente-telefono">
                     <div>{cliente.telefono1}</div>
-                    {cliente.telefono2 && (
-                      <div className="telefono-secundario">{cliente.telefono2}</div>
-                    )}
+                    {cliente.telefono2 && <div className="telefono-secundario">{cliente.telefono2}</div>}
                   </div>
-                  <div className="email">{cliente.correo}</div>
                 </td>
                 <td>
-                  <div className="rut">{cliente.rut}</div>
+                  <div className="cliente-email">{cliente.correo}</div>
+                </td>
+                <td>
+                  <div className="ubicaciones-count">
+                    <span className="badge badge-outline">
+                      {cliente.ubicaciones.length} ubicación{cliente.ubicaciones.length !== 1 ? 'es' : ''}
+                    </span>
+                  </div>
                 </td>
                 <td>
                   <div className="acciones">
-                    <button
-                      onClick={() => onEditCliente(cliente)}
+                    <button 
+                      className="btn-action btn-locations"
+                      onClick={() => onViewUbicaciones(cliente)}
+                      title="Ver ubicaciones"
+                    >
+                      📍
+                    </button>
+                    <button 
                       className="btn-action btn-edit"
+                      onClick={() => onEditCliente(cliente)}
                       title="Editar cliente"
                     >
                       ✏️
                     </button>
-                    <button
-                      onClick={() => onDeleteCliente(cliente.idCliente)}
+                    <button 
                       className="btn-action btn-delete"
+                      onClick={() => onDeleteCliente(cliente.idCliente)}
                       title="Eliminar cliente"
                     >
                       🗑️
@@ -114,10 +113,10 @@ export const ClienteList: React.FC<ClienteListProps> = ({
                   </div>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 };

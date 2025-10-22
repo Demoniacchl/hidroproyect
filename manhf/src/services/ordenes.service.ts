@@ -66,13 +66,13 @@ export interface OrdenMantencion {
 }
 
 export interface OrdenReparacion {
-  idOrden: number;            // Cambiado de id_orden
-  idMotor: number;            // Cambiado de id_motor
-  idTecnico: number;          // Cambiado de id_tecnico
+  idOrdenReparacion: number;  // ← CAMBIADO de idOrden a idOrdenReparacion
+  idMotor: number;
+  idTecnico: number;
   fecha: string;
   observaciones: string;
   progreso: string;
-  firmaCliente: string;       // Cambiado de firma_cliente
+  firmaCliente: string;
   idCliente: number;
   equipo?: Equipo;
   tecnico?: Tecnico;

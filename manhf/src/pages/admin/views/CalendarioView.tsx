@@ -1,34 +1,32 @@
+// src/pages/admin/views/CalendarioView.tsx
 import React, { useState, useEffect } from 'react';
-
-interface EventoCalendario {
-  id: number;
-  idCliente: number;
-  idTecnico: number;
-  tipoEvento: string;
-  titulo: string;
-  descripcion: string;
-  fechaInicio: string;
-  fechaFin: string;
-  estado: string;
-}
-
-interface Cliente {
-  idCliente: number;
-  nombre1: string;
-}
+import { useCalendario } from '../../../hooks/useCalendario';
+import { useClientes } from '../../../hooks/useClientes';
+import type { EventoCreateRequest } from '../../../services/calendario.service';
 
 const CalendarioView: React.FC = () => {
+  const { 
+    eventos, 
+    loading, 
+    error, 
+    createEvento, 
+    updateEvento, 
+    deleteEvento,
+    clearError 
+  } = useCalendario();
+
+  const { clientes } = useClientes();
+  
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [eventos, setEventos] = useState<EventoCalendario[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventosModal, setShowEventosModal] = useState(false);
   const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
   const [showEditarEventoModal, setShowEditarEventoModal] = useState(false);
-  const [eventoEditando, setEventoEditando] = useState<EventoCalendario | null>(null);
-  const [nuevoEvento, setNuevoEvento] = useState({
+  const [eventoEditando, setEventoEditando] = useState<any>(null);
+  
+  const [nuevoEvento, setNuevoEvento] = useState<EventoCreateRequest>({
     idCliente: 0,
-    idTecnico: 1,
+    idTecnico: null,
     tipoEvento: 'MANTENCION',
     titulo: '',
     descripcion: '',
@@ -43,79 +41,6 @@ const CalendarioView: React.FC = () => {
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
-  // Datos ficticios para el demo
-  const clientesFicticios: Cliente[] = [
-    { idCliente: 1, nombre1: 'Juan Pérez' },
-    { idCliente: 2, nombre1: 'María García' },
-    { idCliente: 3, nombre1: 'Carlos López' },
-    { idCliente: 4, nombre1: 'Ana Martínez' },
-    { idCliente: 5, nombre1: 'Pedro Rodríguez' }
-  ];
-
-  const eventosFicticios: EventoCalendario[] = [
-    {
-      id: 1,
-      idCliente: 1,
-      idTecnico: 1,
-      tipoEvento: 'MANTENCION',
-      titulo: 'Mantención preventiva',
-      descripcion: 'Revisión general del sistema',
-      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 15, 9, 0).toISOString(),
-      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 15, 11, 0).toISOString(),
-      estado: 'PROGRAMADO'
-    },
-    {
-      id: 2,
-      idCliente: 2,
-      idTecnico: 1,
-      tipoEvento: 'REPARACION',
-      titulo: 'Reparación de fuga',
-      descripcion: 'Reparación en tubería principal',
-      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 18, 14, 0).toISOString(),
-      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 18, 16, 0).toISOString(),
-      estado: 'PROGRAMADO'
-    },
-    {
-      id: 3,
-      idCliente: 3,
-      idTecnico: 1,
-      tipoEvento: 'INSTALACION',
-      titulo: 'Instalación nuevo equipo',
-      descripcion: 'Instalación de bomba de agua',
-      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 20, 10, 0).toISOString(),
-      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 20, 13, 0).toISOString(),
-      estado: 'PROGRAMADO'
-    },
-    {
-      id: 4,
-      idCliente: 4,
-      idTecnico: 1,
-      tipoEvento: 'EMERGENCIA',
-      titulo: 'Emergencia por inundación',
-      descripcion: 'Sistema de drenaje bloqueado',
-      fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 22, 8, 0).toISOString(),
-      fechaFin: new Date(new Date().getFullYear(), new Date().getMonth(), 22, 12, 0).toISOString(),
-      estado: 'PROGRAMADO'
-    }
-  ];
-
-  useEffect(() => {
-    cargarDatos();
-  }, [currentDate]);
-
-  const cargarDatos = async () => {
-    try {
-      // Usar datos ficticios en lugar de llamadas al API
-      setClientes(clientesFicticios);
-      setEventos(eventosFicticios);
-    } catch (error) {
-      console.error('Error cargando datos:', error);
-      // En caso de error, usar datos ficticios igualmente
-      setClientes(clientesFicticios);
-      setEventos(eventosFicticios);
-    }
-  };
-
   // Función para verificar año bisiesto
   const esBisiesto = (year: number): boolean => {
     return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
@@ -125,28 +50,25 @@ const CalendarioView: React.FC = () => {
   const getDiasEnMes = (year: number, month: number): number => {
     const diasPorMes = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     
-    if (month === 1 && esBisiesto(year)) { // Febrero (mes 1) en año bisiesto
+    if (month === 1 && esBisiesto(year)) {
       return 29;
     }
     
     return diasPorMes[month];
   };
 
-  // Generar días del mes con manejo correcto de fechas
+  // Generar días del mes
   const generarDiasDelMes = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
     const primerDia = new Date(year, month, 1);
-    const ultimoDia = new Date(year, month, getDiasEnMes(year, month));
-    const primerDiaSemana = primerDia.getDay(); // 0 = Domingo
-    
-    const dias = [];
+    const primerDiaSemana = primerDia.getDay();
 
-    // Ajuste para que la semana empiece en Lunes (1)
+    const dias = [];
     const primerDiaAjustado = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
 
-    // Días del mes anterior (para completar primera semana)
+    // Días del mes anterior
     const diasMesAnterior = getDiasEnMes(
       month === 0 ? year - 1 : year,
       month === 0 ? 11 : month - 1
@@ -170,8 +92,8 @@ const CalendarioView: React.FC = () => {
       dias.push({ fecha, esMesActual: true, eventos: eventosDia });
     }
 
-    // Días del mes siguiente (para completar última semana)
-    const diasFaltantes = 42 - dias.length; // 6 semanas * 7 días
+    // Días del mes siguiente
+    const diasFaltantes = 42 - dias.length;
     for (let dia = 1; dia <= diasFaltantes; dia++) {
       const fecha = new Date(
         month === 11 ? year + 1 : year,
@@ -193,6 +115,7 @@ const CalendarioView: React.FC = () => {
         eventoDate.getFullYear() === fecha.getFullYear()
       );
     });
+
   };
 
   const getColorEvento = (tipoEvento: string) => {
@@ -204,6 +127,7 @@ const CalendarioView: React.FC = () => {
       default: return '#6c757d';
     }
   };
+  
 
   const navegarMes = (direccion: 'prev' | 'next') => {
     setCurrentDate(prev => {
@@ -229,23 +153,13 @@ const CalendarioView: React.FC = () => {
     }
   };
 
-  const generarIdUnico = () => {
-    return Math.max(0, ...eventos.map(e => e.id)) + 1;
-  };
-
   const handleCrearEvento = async () => {
     try {
-      const nuevoId = generarIdUnico();
-      const evento: EventoCalendario = {
-        id: nuevoId,
-        ...nuevoEvento
-      };
-      
-      setEventos(prev => [...prev, evento]);
+      await createEvento(nuevoEvento);
       setShowNuevoEventoModal(false);
       setNuevoEvento({
         idCliente: 0,
-        idTecnico: 1,
+        idTecnico: null,
         tipoEvento: 'MANTENCION',
         titulo: '',
         descripcion: '',
@@ -253,10 +167,8 @@ const CalendarioView: React.FC = () => {
         fechaFin: '',
         estado: 'PROGRAMADO'
       });
-      
-      console.log('Evento creado:', evento);
-    } catch (error) {
-      console.error('Error creando evento:', error);
+    } catch (err) {
+      console.error('Error creando evento:', err);
     }
   };
 
@@ -264,27 +176,46 @@ const CalendarioView: React.FC = () => {
     if (!eventoEditando) return;
     
     try {
-      setEventos(prev => prev.map(evento => 
-        evento.id === eventoEditando.id ? eventoEditando : evento
-      ));
+      await updateEvento(eventoEditando.idCalendario, {
+        idCliente: eventoEditando.idCliente,
+        idTecnico: eventoEditando.idTecnico,
+        tipoEvento: eventoEditando.tipoEvento,
+        titulo: eventoEditando.titulo,
+        descripcion: eventoEditando.descripcion,
+        fechaInicio: eventoEditando.fechaInicio,
+        fechaFin: eventoEditando.fechaFin,
+        estado: eventoEditando.estado
+      });
       
       setShowEditarEventoModal(false);
       setEventoEditando(null);
-      console.log('Evento actualizado:', eventoEditando);
-    } catch (error) {
-      console.error('Error editando evento:', error);
+    } catch (err) {
+      console.error('Error editando evento:', err);
     }
   };
+// En CalendarioView.tsx - SOLO la función handleEliminarEvento
+const handleEliminarEvento = async (id: number) => {
+  if (!window.confirm('¿Estás seguro de que deseas eliminar este evento?')) {
+    return;
+  }
 
-  const handleEliminarEvento = async (id: number) => {
-    try {
-      setEventos(prev => prev.filter(evento => evento.id !== id));
-      console.log('Evento eliminado:', id);
-    } catch (error) {
-      console.error('Error eliminando evento:', error);
-    }
-  };
-
+  try {
+    console.log('🗑️ Iniciando eliminación del evento ID:', id);
+    
+    await deleteEvento(id);
+    
+    // CERRAR MODALES INMEDIATAMENTE
+    setShowEditarEventoModal(false);
+    setShowEventosModal(false);
+    setEventoEditando(null);
+    
+    console.log('✅ Eliminación completada');
+    
+  } catch (err) {
+    // NO HACER NADA - los errores ya se manejan en el hook
+    console.log('⚠️ Error manejado internamente');
+  }
+};
   const abrirNuevoEvento = (fecha: Date) => {
     const fechaInicio = new Date(fecha);
     fechaInicio.setHours(9, 0, 0, 0);
@@ -302,7 +233,7 @@ const CalendarioView: React.FC = () => {
     setShowEventosModal(false);
   };
 
-  const abrirEditarEvento = (evento: EventoCalendario) => {
+  const abrirEditarEvento = (evento: any) => {
     setEventoEditando(evento);
     setShowEditarEventoModal(true);
     setShowEventosModal(false);
@@ -352,84 +283,102 @@ const CalendarioView: React.FC = () => {
           </div>
         </div>
 
-{/* Leyenda de eventos */}
-<div className="leyenda-container">
-  <div className="leyenda-item">
-    <div className="leyenda-color leyenda-mantenimiento"></div>
-    <span>Mantención</span>
-  </div>
-  <div className="leyenda-item">
-    <div className="leyenda-color leyenda-reparacion"></div>
-    <span>Reparación</span>
-  </div>
-  <div className="leyenda-item">
-    <div className="leyenda-color leyenda-emergencia"></div>
-    <span>Emergencia</span>
-  </div>
-  <div className="leyenda-item">
-    <div className="leyenda-color leyenda-instalacion"></div>
-    <span>Instalación</span>
-  </div>
-</div>
+        {/* Leyenda de eventos */}
+        <div className="leyenda-container">
+          <div className="leyenda-item">
+            <div className="leyenda-color" style={{backgroundColor: '#28a745'}}></div>
+            <span>Mantención</span>
+          </div>
+          <div className="leyenda-item">
+            <div className="leyenda-color" style={{backgroundColor: '#dc3545'}}></div>
+            <span>Reparación</span>
+          </div>
+          <div className="leyenda-item">
+            <div className="leyenda-color" style={{backgroundColor: '#ffc107'}}></div>
+            <span>Emergencia</span>
+          </div>
+          <div className="leyenda-item">
+            <div className="leyenda-color" style={{backgroundColor: '#17a2b8'}}></div>
+            <span>Instalación</span>
+          </div>
+        </div>
       </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Cargando eventos...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="error-message">
+          {error}
+          <button onClick={clearError} className="close-btn">×</button>
+        </div>
+      )}
 
       {/* Grid del Calendario */}
-      <div className="calendario-grid">
-        {/* Días de la semana */}
-        <div className="calendario-dias-semana">
-          {diasSemana.map(dia => (
-            <div key={dia} className="calendario-dia-header">
-              {dia}
-            </div>
-          ))}
-        </div>
-
-        {/* Días del mes */}
-        <div className="calendario-dias-grid">
-          {generarDiasDelMes().map(({ fecha, esMesActual, eventos }, index) => {
-            const esDiaSeleccionado = selectedDate && 
-              fecha.toDateString() === selectedDate.toDateString();
-            
-            return (
-              <div
-                key={index}
-                className={`calendario-dia ${
-                  !esMesActual ? 'calendario-dia-otro-mes' : ''
-                } ${
-                  esHoy(fecha) ? 'calendario-dia-hoy' : ''
-                } ${
-                  esDiaSeleccionado ? 'calendario-dia-seleccionado' : ''
-                }`}
-                onClick={() => handleSeleccionarDia(fecha, esMesActual)}
-              >
-                <div className="calendario-dia-numero">
-                  {fecha.getDate()}
-                </div>
-                
-                {/* Eventos del día */}
-                <div className="calendario-eventos">
-                  {eventos.slice(0, 3).map((evento, idx) => (
-                    <div
-                      key={idx}
-                      className="calendario-evento-item"
-                      style={{ backgroundColor: getColorEvento(evento.tipoEvento) }}
-                    >
-                      <span className="calendario-evento-texto">
-                        {evento.titulo}
-                      </span>
-                    </div>
-                  ))}
-                  {eventos.length > 3 && (
-                    <div className="calendario-mas-eventos">
-                      +{eventos.length - 3} más
-                    </div>
-                  )}
-                </div>
+      {!loading && (
+        <div className="calendario-grid">
+          {/* Días de la semana */}
+          <div className="calendario-dias-semana">
+            {diasSemana.map(dia => (
+              <div key={dia} className="calendario-dia-header">
+                {dia}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Días del mes */}
+          <div className="calendario-dias-grid">
+            {generarDiasDelMes().map(({ fecha, esMesActual, eventos: eventosDia }, index) => {
+              const esDiaSeleccionado = selectedDate && 
+                fecha.toDateString() === selectedDate.toDateString();
+              
+              return (
+                <div
+                  key={index}
+                  className={`calendario-dia ${
+                    !esMesActual ? 'calendario-dia-otro-mes' : ''
+                  } ${
+                    esHoy(fecha) ? 'calendario-dia-hoy' : ''
+                  } ${
+                    esDiaSeleccionado ? 'calendario-dia-seleccionado' : ''
+                  }`}
+                  onClick={() => handleSeleccionarDia(fecha, esMesActual)}
+                >
+                  <div className="calendario-dia-numero">
+                    {fecha.getDate()}
+                  </div>
+                  
+                  {/* Eventos del día */}
+                  <div className="calendario-eventos">
+                    {eventosDia.slice(0, 3).map((evento, idx) => (
+                      <div
+                        key={idx}
+                        className="calendario-evento-item"
+                        style={{ backgroundColor: getColorEvento(evento.tipoEvento) }}
+                      >
+                        <span className="calendario-evento-texto">
+                          {evento.titulo}
+                        </span>
+                      </div>
+                    ))}
+                    {eventosDia.length > 3 && (
+                      <div className="calendario-mas-eventos">
+                        +{eventosDia.length - 3} más
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal de Eventos del Día */}
       {showEventosModal && selectedDate && (
@@ -460,7 +409,7 @@ const CalendarioView: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {eventosDelDiaSeleccionado.map(evento => (
-                    <div key={evento.id} className="card">
+                    <div key={evento.idCalendario} className="card">
                       <div className="card-header">
                         <div className="flex items-center justify-between">
                           <h4 className="card-title">{evento.titulo}</h4>
@@ -496,6 +445,7 @@ const CalendarioView: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="text-muted">Descripción:</span>
                               <span>{evento.descripcion}</span>
+                              <span> {evento.idCalendario} </span>
                             </div>
                           )}
                         </div>
@@ -509,7 +459,7 @@ const CalendarioView: React.FC = () => {
                         </button>
                         <button 
                           className="btn btn-danger btn-sm"
-                          onClick={() => handleEliminarEvento(evento.id)}
+                          onClick={() => handleEliminarEvento(evento.idCalendario)}
                         >
                           Eliminar
                         </button>
