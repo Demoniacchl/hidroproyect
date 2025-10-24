@@ -7,6 +7,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import TecnicoDashboard from './pages/tecnico/TecnicoDashboard';
 import FormularioMantencion from './pages/tecnico/views/FormularioMantencion';
 import FormularioReparacion from './pages/tecnico/views/FormularioReparacion';
+import NuevaMantencion from './pages/tecnico/views/NuevaMantencion';
+import NuevaReparacion from './pages/tecnico/views/NuevaReparacion';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import '../src/assets/styles/globals.css';
@@ -112,18 +114,8 @@ function App() {
                       <Route path="perfil" element={<PerfilTecnico />} />
                       
                       {/* Rutas para nuevas órdenes (placeholders) */}
-                      <Route path="mantenciones/nueva" element={
-                        <div className="p-6">
-                          <h1 className="text-2xl font-bold mb-4">🛠️ Nueva Mantención</h1>
-                          <p>Formulario para nueva mantención manual</p>
-                        </div>
-                      } />
-                      <Route path="reparaciones/nueva" element={
-                        <div className="p-6">
-                          <h1 className="text-2xl font-bold mb-4">🔧 Nueva Reparación</h1>
-                          <p>Formulario para nueva reparación manual</p>
-                        </div>
-                      } />
+                      <Route path="mantenciones/nueva" element={<NuevaMantencion />} />
+                      <Route path="reparaciones/nueva" element={<NuevaReparacion />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

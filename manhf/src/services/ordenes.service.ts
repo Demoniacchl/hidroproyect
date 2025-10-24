@@ -283,7 +283,7 @@ export const ordenesService = {
   /**
    * Actualizar progreso de orden de reparación
    */
-  updateProgresoReparacion: async (id: number, progreso: string): Promise<OrdenReparacion> => {
+   updateProgresoReparacion: async (id: number, progreso: string): Promise<OrdenReparacion> => {
     try {
       const response = await apiClient.put(`/ordenes-reparacion/${id}/progreso`, {}, {
         params: { progreso }

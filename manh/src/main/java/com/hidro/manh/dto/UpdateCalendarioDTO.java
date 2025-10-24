@@ -10,6 +10,7 @@ public class UpdateCalendarioDTO {
     private Long idCliente;
     private Long idEquipo;
     private Long idTecnico;
+    private Long idUbicacion; // ✅ CORRECCIÓN: Cambié de Object a Long
     private TipoEvento tipoEvento;
     private String titulo;
     private String descripcion;
@@ -29,6 +30,9 @@ public class UpdateCalendarioDTO {
     
     public Long getIdTecnico() { return idTecnico; }
     public void setIdTecnico(Long idTecnico) { this.idTecnico = idTecnico; }
+    
+    public Long getIdUbicacion() { return idUbicacion; } // ✅ CORRECCIÓN: Cambié de Object a Long
+    public void setIdUbicacion(Long idUbicacion) { this.idUbicacion = idUbicacion; }
     
     public TipoEvento getTipoEvento() { return tipoEvento; }
     public void setTipoEvento(TipoEvento tipoEvento) { this.tipoEvento = tipoEvento; }

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCalendario } from '../../../hooks/useCalendario';
 import { useClientes } from '../../../hooks/useClientes';
+import { useUbicacion } from '../../../hooks/useUbicacion'; // ← CORREGIDO: singular
 import type { EventoCreateRequest } from '../../../services/calendario.service';
 
 const CalendarioView: React.FC = () => {
@@ -16,6 +17,7 @@ const CalendarioView: React.FC = () => {
   } = useCalendario();
 
   const { clientes } = useClientes();
+  const { ubicaciones, cargarUbicacionesPorCliente, loading: loadingUbicaciones } = useUbicacion(); // ← CORREGIDO: singular
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -26,6 +28,7 @@ const CalendarioView: React.FC = () => {
   
   const [nuevoEvento, setNuevoEvento] = useState<EventoCreateRequest>({
     idCliente: 0,
+    idUbicacion: 0,
     idTecnico: null,
     tipoEvento: 'MANTENCION',
     titulo: '',
@@ -40,6 +43,22 @@ const CalendarioView: React.FC = () => {
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
+
+  // Cargar ubicaciones cuando cambia el cliente seleccionado en NUEVO evento
+  useEffect(() => {
+    if (nuevoEvento.idCliente > 0) {
+      cargarUbicacionesPorCliente(nuevoEvento.idCliente);
+      // Resetear ubicación cuando cambia el cliente
+      setNuevoEvento(prev => ({ ...prev, idUbicacion: 0 }));
+    }
+  }, [nuevoEvento.idCliente]);
+
+  // Cargar ubicaciones cuando se abre el modal de EDITAR evento
+  useEffect(() => {
+    if (eventoEditando?.idCliente) {
+      cargarUbicacionesPorCliente(eventoEditando.idCliente);
+    }
+  }, [eventoEditando]);
 
   // Función para verificar año bisiesto
   const esBisiesto = (year: number): boolean => {
@@ -115,7 +134,6 @@ const CalendarioView: React.FC = () => {
         eventoDate.getFullYear() === fecha.getFullYear()
       );
     });
-
   };
 
   const getColorEvento = (tipoEvento: string) => {
@@ -127,7 +145,6 @@ const CalendarioView: React.FC = () => {
       default: return '#6c757d';
     }
   };
-  
 
   const navegarMes = (direccion: 'prev' | 'next') => {
     setCurrentDate(prev => {
@@ -157,8 +174,10 @@ const CalendarioView: React.FC = () => {
     try {
       await createEvento(nuevoEvento);
       setShowNuevoEventoModal(false);
+      // Resetear formulario
       setNuevoEvento({
         idCliente: 0,
+        idUbicacion: 0,
         idTecnico: null,
         tipoEvento: 'MANTENCION',
         titulo: '',
@@ -178,6 +197,7 @@ const CalendarioView: React.FC = () => {
     try {
       await updateEvento(eventoEditando.idCalendario, {
         idCliente: eventoEditando.idCliente,
+        idUbicacion: eventoEditando.idUbicacion,
         idTecnico: eventoEditando.idTecnico,
         tipoEvento: eventoEditando.tipoEvento,
         titulo: eventoEditando.titulo,
@@ -193,29 +213,29 @@ const CalendarioView: React.FC = () => {
       console.error('Error editando evento:', err);
     }
   };
-// En CalendarioView.tsx - SOLO la función handleEliminarEvento
-const handleEliminarEvento = async (id: number) => {
-  if (!window.confirm('¿Estás seguro de que deseas eliminar este evento?')) {
-    return;
-  }
 
-  try {
-    console.log('🗑️ Iniciando eliminación del evento ID:', id);
-    
-    await deleteEvento(id);
-    
-    // CERRAR MODALES INMEDIATAMENTE
-    setShowEditarEventoModal(false);
-    setShowEventosModal(false);
-    setEventoEditando(null);
-    
-    console.log('✅ Eliminación completada');
-    
-  } catch (err) {
-    // NO HACER NADA - los errores ya se manejan en el hook
-    console.log('⚠️ Error manejado internamente');
-  }
-};
+  const handleEliminarEvento = async (id: number) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este evento?')) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Iniciando eliminación del evento ID:', id);
+      
+      await deleteEvento(id);
+      
+      // CERRAR MODALES INMEDIATAMENTE
+      setShowEditarEventoModal(false);
+      setShowEventosModal(false);
+      setEventoEditando(null);
+      
+      console.log('✅ Eliminación completada');
+      
+    } catch (err) {
+      console.log('⚠️ Error manejado internamente');
+    }
+  };
+
   const abrirNuevoEvento = (fecha: Date) => {
     const fechaInicio = new Date(fecha);
     fechaInicio.setHours(9, 0, 0, 0);
@@ -248,6 +268,18 @@ const handleEliminarEvento = async (id: number) => {
       fecha.getMonth() === hoy.getMonth() &&
       fecha.getFullYear() === hoy.getFullYear()
     );
+  };
+
+  // Obtener nombre de la ubicación
+  const getNombreUbicacion = (idUbicacion: number) => {
+    const ubicacion = ubicaciones.find(u => u.idUbicacion === idUbicacion);
+    return ubicacion ? `${ubicacion.nombre} - ${ubicacion.calle} ${ubicacion.numero}` : `Ubicación #${idUbicacion}`;
+  };
+
+  // Obtener nombre del cliente
+  const getNombreCliente = (idCliente: number) => {
+    const cliente = clientes.find(c => c.idCliente === idCliente);
+    return cliente ? cliente.nombre1 : `Cliente #${idCliente}`;
   };
 
   return (
@@ -425,8 +457,12 @@ const handleEliminarEvento = async (id: number) => {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-muted">Cliente:</span>
+                            <span>{getNombreCliente(evento.idCliente)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted">Ubicación:</span>
                             <span>
-                              {clientes.find(c => c.idCliente === evento.idCliente)?.nombre1 || `Cliente #${evento.idCliente}`}
+                              {evento.idUbicacion ? getNombreUbicacion(evento.idUbicacion) : 'No asignada'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -445,7 +481,6 @@ const handleEliminarEvento = async (id: number) => {
                             <div className="flex items-center gap-2">
                               <span className="text-muted">Descripción:</span>
                               <span>{evento.descripcion}</span>
-                              <span> {evento.idCalendario} </span>
                             </div>
                           )}
                         </div>
@@ -519,12 +554,34 @@ const handleEliminarEvento = async (id: number) => {
                 <select
                   className="input"
                   value={nuevoEvento.idCliente}
-                  onChange={(e) => setNuevoEvento({...nuevoEvento, idCliente: parseInt(e.target.value)})}
+                  onChange={(e) => setNuevoEvento({...nuevoEvento, idCliente: parseInt(e.target.value), idUbicacion: 0})}
                 >
                   <option value={0}>Seleccionar cliente</option>
                   {clientes.map(cliente => (
                     <option key={cliente.idCliente} value={cliente.idCliente}>
                       {cliente.nombre1}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Ubicación:</label>
+                <select
+                  className="input"
+                  value={nuevoEvento.idUbicacion}
+                  onChange={(e) => setNuevoEvento({...nuevoEvento, idUbicacion: parseInt(e.target.value)})}
+                  disabled={!nuevoEvento.idCliente || loadingUbicaciones}
+                >
+                  <option value={0}>
+                    {!nuevoEvento.idCliente ? 'Seleccione un cliente primero' : 
+                     loadingUbicaciones ? 'Cargando ubicaciones...' :
+                     ubicaciones.length === 0 ? 'No hay ubicaciones para este cliente' : 
+                     'Seleccionar ubicación'}
+                  </option>
+                  {ubicaciones.map(ubicacion => (
+                    <option key={ubicacion.idUbicacion} value={ubicacion.idUbicacion}>
+                      {ubicacion.nombre} - {ubicacion.calle} {ubicacion.numero}
                     </option>
                   ))}
                 </select>
@@ -588,7 +645,7 @@ const handleEliminarEvento = async (id: number) => {
               <button 
                 className="btn btn-primary"
                 onClick={handleCrearEvento}
-                disabled={!nuevoEvento.titulo || !nuevoEvento.idCliente || !nuevoEvento.fechaInicio}
+                disabled={!nuevoEvento.titulo || !nuevoEvento.idCliente || !nuevoEvento.idUbicacion || !nuevoEvento.fechaInicio}
               >
                 Crear Evento
               </button>
@@ -627,11 +684,31 @@ const handleEliminarEvento = async (id: number) => {
                 <select
                   className="input"
                   value={eventoEditando.idCliente}
-                  onChange={(e) => setEventoEditando({...eventoEditando, idCliente: parseInt(e.target.value)})}
+                  onChange={(e) => setEventoEditando({...eventoEditando, idCliente: parseInt(e.target.value), idUbicacion: 0})}
                 >
                   {clientes.map(cliente => (
                     <option key={cliente.idCliente} value={cliente.idCliente}>
                       {cliente.nombre1}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Ubicación:</label>
+                <select
+                  className="input"
+                  value={eventoEditando.idUbicacion}
+                  onChange={(e) => setEventoEditando({...eventoEditando, idUbicacion: parseInt(e.target.value)})}
+                  disabled={loadingUbicaciones}
+                >
+                  <option value={0}>
+                    {loadingUbicaciones ? 'Cargando ubicaciones...' : 
+                     ubicaciones.length === 0 ? 'No hay ubicaciones para este cliente' : 'Seleccionar ubicación'}
+                  </option>
+                  {ubicaciones.map(ubicacion => (
+                    <option key={ubicacion.idUbicacion} value={ubicacion.idUbicacion}>
+                      {ubicacion.nombre} - {ubicacion.calle} {ubicacion.numero}
                     </option>
                   ))}
                 </select>
@@ -707,14 +784,14 @@ const handleEliminarEvento = async (id: number) => {
               </button>
               <button 
                 className="btn btn-danger"
-                onClick={() => handleEliminarEvento(eventoEditando.id)}
+                onClick={() => handleEliminarEvento(eventoEditando.idCalendario)}
               >
                 Eliminar
               </button>
               <button 
                 className="btn btn-primary"
                 onClick={handleEditarEvento}
-                disabled={!eventoEditando.titulo || !eventoEditando.idCliente || !eventoEditando.fechaInicio}
+                disabled={!eventoEditando.titulo || !eventoEditando.idCliente || !eventoEditando.idUbicacion || !eventoEditando.fechaInicio}
               >
                 Guardar Cambios
               </button>

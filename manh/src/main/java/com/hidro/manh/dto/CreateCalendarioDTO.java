@@ -10,6 +10,7 @@ public class CreateCalendarioDTO {
     private Long idCliente;
     private Long idEquipo;
     private Long idTecnico;
+    private Long idUbicacion; // ✅ CORRECTO: Long
     private TipoEvento tipoEvento;
     private String titulo;
     private String descripcion;
@@ -29,6 +30,9 @@ public class CreateCalendarioDTO {
     
     public Long getIdTecnico() { return idTecnico; }
     public void setIdTecnico(Long idTecnico) { this.idTecnico = idTecnico; }
+    
+    public Long getIdUbicacion() { return idUbicacion; } // ✅ CORRECTO
+    public void setIdUbicacion(Long idUbicacion) { this.idUbicacion = idUbicacion; }
     
     public TipoEvento getTipoEvento() { return tipoEvento; }
     public void setTipoEvento(TipoEvento tipoEvento) { this.tipoEvento = tipoEvento; }

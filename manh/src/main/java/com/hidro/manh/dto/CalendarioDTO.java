@@ -11,6 +11,7 @@ public class CalendarioDTO {
     private Long idCliente;
     private String nombreCliente;
     private Long idEquipo;
+    private Long idUbicacion;
     private String nombreEquipo;
     private Long idTecnico;
     private String nombreTecnico;
@@ -27,10 +28,20 @@ public class CalendarioDTO {
     // Constructores
     public CalendarioDTO() {}
     
-    public CalendarioDTO(Long idCalendario, Long idCliente, String nombreCliente, Long idEquipo, 
-                        String nombreEquipo, Long idTecnico, String nombreTecnico, TipoEvento tipoEvento, 
-                        String titulo, String descripcion, LocalDateTime fechaInicio, LocalDateTime fechaFin, 
-                        EstadoEvento estado, Boolean notificado) {
+    public CalendarioDTO(
+        Long idCalendario,
+        Long idCliente,
+        String nombreCliente,
+        Long idEquipo,
+        String nombreEquipo,
+        Long idTecnico,
+        String nombreTecnico,
+        TipoEvento tipoEvento,
+        String titulo,
+        String descripcion,
+        LocalDateTime fechaInicio,
+        LocalDateTime fechaFin,
+        EstadoEvento estado, Boolean notificado) {
         this.idCalendario = idCalendario;
         this.idCliente = idCliente;
         this.nombreCliente = nombreCliente;
@@ -60,6 +71,9 @@ public class CalendarioDTO {
     public Long getIdEquipo() { return idEquipo; }
     public void setIdEquipo(Long idEquipo) { this.idEquipo = idEquipo; }
     
+    public Long getIdUbicacion() { return idUbicacion; }
+    public void setIdUbicacion(Long idUbicacion) { this.idUbicacion = idUbicacion; }
+
     public String getNombreEquipo() { return nombreEquipo; }
     public void setNombreEquipo(String nombreEquipo) { this.nombreEquipo = nombreEquipo; }
     

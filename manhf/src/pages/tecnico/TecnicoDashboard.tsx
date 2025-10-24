@@ -13,9 +13,9 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
   const navigate = useNavigate();
   
   const [eventosHoy, setEventosHoy] = useState<EventoCalendario[]>([]);
-  const [eventosPendientes, setEventosPendientes] = useState<EventoCalendario[]>([]);
+  const [eventosSemana, setEventosSemana] = useState<EventoCalendario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'hoy' | 'pendientes'>('hoy');
+  const [activeTab, setActiveTab] = useState<'hoy' | 'semana'>('hoy');
 
   useEffect(() => {
     cargarEventosTecnico();
@@ -28,20 +28,33 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
       
       const hoy = new Date().toISOString().split('T')[0];
       
-      // Eventos de hoy asignados al técnico
-      const eventosDeHoy = eventos.filter(evento => 
-        evento.fechaInicio?.startsWith(hoy) && 
-        (evento.estado === 'PROGRAMADO' || evento.estado === 'EN_PROCESO')
-      );
+      // Eventos de hoy (asignados al técnico o sin asignar)
+      const eventosDeHoy = eventos.filter(evento => {
+        const fechaEvento = evento.fechaInicio?.split('T')[0];
+        return fechaEvento === hoy && 
+               (evento.estado === 'PROGRAMADO' || evento.estado === 'EN_PROCESO') &&
+               (evento.idTecnico === user?.idUsuario || !evento.idTecnico)
+      });
       
-      // Todos los eventos pendientes asignados al técnico
-      const eventosPend = eventos.filter(evento => 
-        (evento.estado === 'PROGRAMADO' || evento.estado === 'EN_PROCESO') &&
-        evento.idTecnico === user?.idUsuario
-      );
+      // Eventos de la semana (próximos 7 días)
+      const eventosDeLaSemana = eventos.filter(evento => {
+        if (!evento.fechaInicio) return false;
+        
+        const fechaEvento = new Date(evento.fechaInicio);
+        const hoy = new Date();
+        const finDeSemana = new Date();
+        finDeSemana.setDate(hoy.getDate() + 7);
+        
+        return (
+          fechaEvento >= hoy && 
+          fechaEvento <= finDeSemana &&
+          (evento.estado === 'PROGRAMADO' || evento.estado === 'EN_PROCESO') &&
+          (evento.idTecnico === user?.idUsuario || !evento.idTecnico)
+        );
+      });
 
       setEventosHoy(eventosDeHoy);
-      setEventosPendientes(eventosPend);
+      setEventosSemana(eventosDeLaSemana);
     } catch (error) {
       console.error('Error cargando eventos:', error);
     } finally {
@@ -51,8 +64,8 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
 
   const handleTomarEvento = async (evento: EventoCalendario) => {
     try {
-      // Marcar evento como tomado por el técnico
-      await eventosService.updateEvento(evento.idCalendario, {
+      // Marcar evento como tomado por el técnico usando calendarioService
+      await calendarioService.updateEvento(evento.idCalendario, {
         estado: 'EN_PROCESO',
         idTecnico: user?.idUsuario
       });
@@ -64,6 +77,8 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
         navigate(`/tecnico/reparacion/${evento.idCalendario}`);
       } else if (evento.tipoEvento === 'EMERGENCIA') {
         navigate(`/tecnico/reparacion/${evento.idCalendario}?emergencia=true`);
+      } else if (evento.tipoEvento === 'INSTALACION') {
+        navigate(`/tecnico/mantencion/${evento.idCalendario}`);
       }
       
       // Recargar eventos
@@ -74,50 +89,37 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
   };
 
   const handleNavigation = (view: string) => {
-    if (onViewChange) {
-      onViewChange(view);
+    // Usar navigate para cambiar de vista
+    switch (view) {
+      case 'mantenciones':
+        navigate('/tecnico/mantenciones/nueva');
+        break;
+      case 'reparaciones':
+        navigate('/tecnico/reparaciones/nueva');
+        break;
+      case 'historial':
+        navigate('/tecnico/historico');
+        break;
+      default:
+        // Para otras vistas, usar onViewChange si existe
+        if (onViewChange) {
+          onViewChange(view);
+        }
     }
   };
 
+  // Calcular estadísticas
+  const eventosCompletados = eventosSemana.filter(e => e.estado === 'COMPLETADO').length;
+  const totalEventos = eventosHoy.length + eventosSemana.length;
+  const eficiencia = totalEventos > 0 ? Math.round((eventosCompletados / totalEventos) * 100) : 0;
+
   return (
     <div className="tecnico-dashboard">
-      {/* QUITÉ EL HEADER PROPIO - usa el del Layout */}
-      
       <div className="px-6 py-6">
         
         {/* Tarjetas de Acceso Rápido */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button 
-              onClick={() => handleNavigation('mantenciones')}
-              className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200 text-left"
-            >
-              <div className="flex items-center">
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <span className="text-blue-600 text-xl">🛠️</span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="font-semibold text-gray-900">Nueva Mantención</h3>
-                  <p className="text-sm text-gray-600">Crear mantención manual</p>
-                </div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => handleNavigation('reparaciones')}
-              className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200 text-left"
-            >
-              <div className="flex items-center">
-                <div className="bg-orange-100 p-3 rounded-lg">
-                  <span className="text-orange-600 text-xl">🔧</span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="font-semibold text-gray-900">Nueva Reparación</h3>
-                  <p className="text-sm text-gray-600">Crear reparación manual</p>
-                </div>
-              </div>
-            </button>
 
             <button 
               onClick={() => handleNavigation('historial')}
@@ -151,13 +153,13 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
             </button>
             <button
               className={`flex-1 py-4 text-center font-medium ${
-                activeTab === 'pendientes' 
+                activeTab === 'semana' 
                   ? 'text-blue-600 border-b-2 border-blue-600' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
-              onClick={() => setActiveTab('pendientes')}
+              onClick={() => setActiveTab('semana')}
             >
-              ⏳ Tareas Pendientes
+              📋 Tareas de la Semana
             </button>
           </div>
 
@@ -175,9 +177,9 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
               />
             ) : (
               <EventosList 
-                eventos={eventosPendientes}
+                eventos={eventosSemana}
                 onTomarEvento={handleTomarEvento}
-                tipo="pendientes"
+                tipo="semana"
               />
             )}
           </div>
@@ -191,37 +193,32 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
           </div>
           <div className="bg-white p-4 rounded-lg shadow text-center">
             <div className="text-2xl font-bold text-green-600">
-              {eventosPendientes.filter(e => e.estado === 'COMPLETADO').length}
+              {eventosCompletados}
             </div>
             <div className="text-sm text-gray-600">Completadas</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow text-center">
-            <div className="text-2xl font-bold text-orange-600">{eventosPendientes.length}</div>
-            <div className="text-sm text-gray-600">Pendientes</div>
+            <div className="text-2xl font-bold text-orange-600">{eventosSemana.length}</div>
+            <div className="text-sm text-gray-600">Esta Semana</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {eventosHoy.length + eventosPendientes.length > 0 
-                ? Math.round((eventosPendientes.filter(e => e.estado === 'COMPLETADO').length / (eventosHoy.length + eventosPendientes.length)) * 100)
-                : 0
-              }%
+              {eficiencia}%
             </div>
             <div className="text-sm text-gray-600">Eficiencia</div>
           </div>
         </div>
 
       </div>
-
-      {/* QUITÉ EL BOTTOM NAVIGATION - usa el Sidebar del Layout */}
     </div>
   );
 };
 
-// Componente para lista de eventos (sin cambios)
+// Componente para lista de eventos (mejorado con fechas)
 const EventosList: React.FC<{
   eventos: EventoCalendario[];
   onTomarEvento: (evento: EventoCalendario) => void;
-  tipo: 'hoy' | 'pendientes';
+  tipo: 'hoy' | 'semana';
 }> = ({ eventos, onTomarEvento, tipo }) => {
   const getColorTipoEvento = (tipo: string) => {
     switch (tipo) {
@@ -250,6 +247,25 @@ const EventosList: React.FC<{
     });
   };
 
+  const formatFecha = (fechaString: string) => {
+    const fecha = new Date(fechaString);
+    const hoy = new Date();
+    const manana = new Date();
+    manana.setDate(hoy.getDate() + 1);
+    
+    if (fecha.toDateString() === hoy.toDateString()) {
+      return 'Hoy';
+    } else if (fecha.toDateString() === manana.toDateString()) {
+      return 'Mañana';
+    } else {
+      return fecha.toLocaleDateString('es-CL', { 
+        weekday: 'short', 
+        day: 'numeric', 
+        month: 'short' 
+      });
+    }
+  };
+
   if (eventos.length === 0) {
     return (
       <div className="text-center py-8">
@@ -257,7 +273,7 @@ const EventosList: React.FC<{
         <p className="text-gray-500">
           {tipo === 'hoy' 
             ? 'No hay eventos programados para hoy' 
-            : 'No hay eventos pendientes'
+            : 'No hay eventos para esta semana'
           }
         </p>
       </div>
@@ -280,7 +296,11 @@ const EventosList: React.FC<{
                 </span>
                 {evento.fechaInicio && (
                   <span className="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                    {formatHora(evento.fechaInicio)}
+                    {tipo === 'semana' ? (
+                      `${formatFecha(evento.fechaInicio)} • ${formatHora(evento.fechaInicio)}`
+                    ) : (
+                      formatHora(evento.fechaInicio)
+                    )}
                   </span>
                 )}
               </div>
@@ -317,16 +337,16 @@ const EventosList: React.FC<{
             {evento.estado === 'PROGRAMADO' && (
               <button
                 onClick={() => onTomarEvento(evento)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
-                Tomar
+                Tomar Tarea
               </button>
             )}
             
             {evento.estado === 'EN_PROCESO' && (
               <button
                 onClick={() => onTomarEvento(evento)}
-                className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm"
               >
                 Continuar
               </button>

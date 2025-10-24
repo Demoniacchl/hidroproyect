@@ -45,11 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔐 Iniciando login...', { username });
       
-      // ✅ PASO 1: Obtener token y datos del backend
+      // llamar al servicio de autenticación
       const userData = await authService.login({ username, password });
       console.log('✅ Datos recibidos del login:', userData);
-      
-      // ✅ PASO 2: Guardar token para futuras peticiones
+      // guardar token y datos en localStorage
       localStorage.setItem('token', userData.token);
       localStorage.setItem('user', JSON.stringify({
         nombre: userData.nombre,

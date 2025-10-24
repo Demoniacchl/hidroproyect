@@ -1,58 +1,36 @@
-// src/pages/tecnicos/views/FormularioReparacion.tsx (Actualizado)
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { calendarioService, EventoCalendario } from '../../../services/calendario.service';
+// src/pages/tecnicos/views/NuevaReparacion.tsx (Actualizado)
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import { calendarioService } from '../../../services/calendario.service';
 import { ordenesService } from '../../../services/ordenes.service';
 import SignatureCanvas from '../../../components/SignatureCanvas';
 
-const FormularioReparacion: React.FC = () => {
-  const { idEvento } = useParams<{ idEvento: string }>();
+const NuevaReparacion: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const esEmergencia = searchParams.get('emergencia') === 'true';
   
-  const [evento, setEvento] = useState<EventoCalendario | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [firmaCliente, setFirmaCliente] = useState<string>('');
   
   const [formData, setFormData] = useState({
+    // Información básica
+    idCliente: '',
+    idEquipo: '',
+    titulo: '',
+    descripcion: '',
     fecha: new Date().toISOString().split('T')[0],
+    
+    // Datos de reparación
     observaciones: '',
-    progreso: 'EN_GESTION' as 'REALIZADO' | 'NO_REALIZADO' | 'EN_GESTION',
+    progreso: 'REALIZADO' as 'REALIZADO' | 'NO_REALIZADO' | 'EN_GESTION',
     diagnostico: '',
     materialesUtilizados: '',
-    tiempoTrabajo: ''
+    tiempoTrabajo: '',
+    esEmergencia: false
   });
 
-  useEffect(() => {
-    if (idEvento) {
-      cargarEvento();
-    }
-  }, [idEvento]);
-
-  const cargarEvento = async () => {
-    try {
-      setLoading(true);
-      const eventoData = await calendarioService.getEvento(Number(idEvento));
-      setEvento(eventoData);
-      
-      // Pre-cargar descripción del evento en observaciones
-      if (eventoData.descripcion) {
-        setFormData(prev => ({
-          ...prev,
-          observaciones: eventoData.descripcion,
-          diagnostico: eventoData.descripcion
-        }));
-      }
-    } catch (error) {
-      console.error('Error cargando evento:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -67,73 +45,57 @@ const FormularioReparacion: React.FC = () => {
     setFirmaCliente('');
   };
 
-  const handleGuardar = async () => {
-    if (!evento) return;
-    
-    if (!firmaCliente) {
-      alert('Por favor capture la firma del cliente antes de guardar');
+  const handleSubmit = async () => {
+    if (!formData.idCliente || !formData.titulo || !formData.diagnostico) {
+      alert('Por favor complete cliente, título y diagnóstico');
       return;
     }
-    
+
+    if (!firmaCliente) {
+      alert('Por favor capture la firma del cliente');
+      return;
+    }
+
     try {
-      setSaving(true);
-      
-      // Crear la orden de reparación
-      const ordenReparacion = await ordenesService.createReparacion({
-        idMotor: evento.idEquipo || 0,
-        idTecnico: evento.idTecnico || 0,
-        idCliente: evento.idCliente,
+      setLoading(true);
+
+      // 1. Crear evento en calendario
+      const fechaInicio = `${formData.fecha}T09:00:00`;
+      const fechaFin = `${formData.fecha}T11:00:00`;
+
+      const nuevoEvento = await calendarioService.createEvento({
+        idCliente: parseInt(formData.idCliente),
+        idEquipo: formData.idEquipo ? parseInt(formData.idEquipo) : null,
+        idTecnico: user?.idUsuario || null,
+        tipoEvento: formData.esEmergencia ? 'EMERGENCIA' : 'REPARACION',
+        titulo: formData.titulo,
+        descripcion: formData.descripcion,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+        estado: formData.progreso === 'REALIZADO' ? 'COMPLETADO' : 'EN_PROCESO'
+      });
+
+      // 2. Crear orden de reparación
+      await ordenesService.createReparacion({
+        idMotor: formData.idEquipo ? parseInt(formData.idEquipo) : 0,
+        idTecnico: user?.idUsuario || 0,
+        idCliente: parseInt(formData.idCliente),
         idUbicacion: 0,
         fecha: `${formData.fecha}T12:00:00`,
         observaciones: `${formData.diagnostico}\n\nTrabajo realizado: ${formData.observaciones}\nMateriales: ${formData.materialesUtilizados}\nTiempo: ${formData.tiempoTrabajo}`,
         progreso: formData.progreso,
-        firmaCliente: firmaCliente // Firma digital
+        firmaCliente: firmaCliente // Usar la firma digital
       });
 
-      // Actualizar evento según el progreso
-      const nuevoEstado = formData.progreso === 'REALIZADO' ? 'COMPLETADO' : 'EN_PROCESO';
-      await calendarioService.updateEvento(evento.idCalendario, {
-        estado: nuevoEstado,
-        idOrdenReparacion: ordenReparacion.idOrdenReparacion
-      });
-
-      navigate('/tecnico?mensaje=reparacion_guardada');
+      navigate('/tecnico?mensaje=reparacion_creada');
 
     } catch (error) {
-      console.error('Error guardando reparación:', error);
-      alert('Error al guardar la reparación');
+      console.error('Error creando reparación:', error);
+      alert('Error al crear la reparación');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600 mt-4">Cargando evento...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!evento) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <span className="text-6xl mb-4">❌</span>
-          <h2 className="text-xl font-semibold text-gray-900">Evento no encontrado</h2>
-          <button 
-            onClick={() => navigate('/tecnico')}
-            className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg"
-          >
-            Volver al Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -150,41 +112,97 @@ const FormularioReparacion: React.FC = () => {
               </button>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
-                  {esEmergencia ? '🚨 Emergencia' : '🔧 Reparación'}
+                  {formData.esEmergencia ? '🚨 ORDEN DE EMERGENCIA' : '🔧 ORDEN DE REPARACIÓN'}
                 </h1>
-                <p className="text-xs text-gray-600">{evento.titulo}</p>
+                <p className="text-xs text-gray-600">
+                  {formData.esEmergencia ? 'Reparación de emergencia' : 'Reparación manual'}
+                </p>
               </div>
             </div>
-            <div className={`badge ${esEmergencia ? 'badge-danger' : 'badge-warning'}`}>
-              {esEmergencia ? 'URGENTE' : 'REPARACIÓN'}
+            <div className={`badge ${formData.esEmergencia ? 'badge-danger' : 'badge-warning'}`}>
+              {formData.esEmergencia ? 'URGENTE' : 'REPARACIÓN'}
             </div>
           </div>
         </div>
       </header>
 
       <main className="p-4 space-y-4">
-        {/* Información del Evento */}
+        {/* Información Básica */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">📋 Información del Servicio</h2>
+            <h2 className="card-title">📋 Información Básica</h2>
           </div>
-          <div className="card-content space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Cliente:</span>
-              <span className="font-medium">#{evento.idCliente}</span>
+          <div className="card-content space-y-4">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">ID Cliente *</label>
+                <input
+                  type="number"
+                  value={formData.idCliente}
+                  onChange={(e) => handleInputChange('idCliente', e.target.value)}
+                  placeholder="Ej: 123"
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">ID Equipo</label>
+                <input
+                  type="number"
+                  value={formData.idEquipo}
+                  onChange={(e) => handleInputChange('idEquipo', e.target.value)}
+                  placeholder="Opcional"
+                  className="form-input"
+                />
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Equipo:</span>
-              <span className="font-medium">#{evento.idEquipo || 'N/A'}</span>
+
+            <div className="form-group">
+              <label className="form-label">Título *</label>
+              <input
+                type="text"
+                value={formData.titulo}
+                onChange={(e) => handleInputChange('titulo', e.target.value)}
+                placeholder="Ej: Reparación de bomba principal"
+                className="form-input"
+              />
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Prioridad:</span>
-              <span className="font-medium">{esEmergencia ? 'ALTA' : 'MEDIA'}</span>
+
+            <div className="form-group">
+              <label className="form-label">Descripción</label>
+              <textarea
+                value={formData.descripcion}
+                onChange={(e) => handleInputChange('descripcion', e.target.value)}
+                rows={2}
+                placeholder="Describa el problema a reparar..."
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Fecha</label>
+              <input
+                type="date"
+                value={formData.fecha}
+                onChange={(e) => handleInputChange('fecha', e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.esEmergencia}
+                  onChange={(e) => handleInputChange('esEmergencia', e.target.checked)}
+                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span className="text-sm font-medium text-gray-700">Marcar como emergencia</span>
+              </label>
             </div>
           </div>
         </div>
 
-        {/* Formulario de Reparación */}
+        {/* Datos de la Reparación */}
         <div className="card">
           <div className="card-header">
             <h2 className="card-title">🔧 Datos de la Reparación</h2>
@@ -201,6 +219,7 @@ const FormularioReparacion: React.FC = () => {
                 ].map((opcion) => (
                   <button
                     key={opcion.value}
+                    type="button"
                     onClick={() => handleInputChange('progreso', opcion.value)}
                     className={`p-3 rounded-lg border text-center text-sm font-medium transition-all ${
                       formData.progreso === opcion.value
@@ -264,8 +283,8 @@ const FormularioReparacion: React.FC = () => {
           </div>
         </div>
 
-        {/* Información Adicional para Emergencias */}
-        {esEmergencia && (
+        {/* Información de Emergencia */}
+        {formData.esEmergencia && (
           <div className="card border-l-4 border-l-red-500">
             <div className="card-header bg-red-50">
               <h2 className="card-title text-red-800">⚠️ Reparación de Emergencia</h2>
@@ -273,7 +292,7 @@ const FormularioReparacion: React.FC = () => {
             <div className="card-content">
               <p className="text-sm text-red-700">
                 Esta reparación fue marcada como emergencia. Asegúrese de documentar 
-                completamente la situación y las acciones tomadas.
+                completamente la situación y las acciones tomadas para seguimiento.
               </p>
             </div>
           </div>
@@ -307,19 +326,18 @@ const FormularioReparacion: React.FC = () => {
           >
             Cancelar
           </button>
-          
           <button
-            onClick={handleGuardar}
-            disabled={saving || !formData.diagnostico || !formData.observaciones || !firmaCliente}
+            onClick={handleSubmit}
+            disabled={loading || !formData.idCliente || !formData.titulo || !formData.diagnostico || !firmaCliente}
             className="btn btn-primary flex-1 py-3"
           >
-            {saving ? (
+            {loading ? (
               <span className="flex items-center gap-2">
                 <div className="spinner-small"></div>
-                Guardando...
+                Creando...
               </span>
             ) : (
-              'Guardar Reparación'
+              'Crear Reparación'
             )}
           </button>
         </div>
@@ -328,4 +346,4 @@ const FormularioReparacion: React.FC = () => {
   );
 };
 
-export default FormularioReparacion;
+export default NuevaReparacion;

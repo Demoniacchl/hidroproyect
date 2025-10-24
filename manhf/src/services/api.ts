@@ -61,6 +61,9 @@ export const apiClient = {
     try {
       const response = await fetch(url, config);
       
+      // DEBUG DETALLADO PARA ERRORES
+      console.log('🔍 DEBUG - Response status:', response.status, response.statusText);
+      
       if (response.status === 401) {
         console.error('❌ Token inválido o expirado');
         localStorage.removeItem('token');
@@ -70,18 +73,46 @@ export const apiClient = {
       }
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Error del servidor:', errorText);
+        // OBTENER DETALLES COMPLETOS DEL ERROR 400
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+          console.error('❌ DEBUG ERROR 400 - Cuerpo completo del error:', errorBody);
+          
+          // Intentar mostrar el error de forma más legible
+          try {
+            const errorJson = JSON.parse(errorBody);
+            console.error('❌ DEBUG ERROR 400 - JSON parseado:', JSON.stringify(errorJson, null, 2));
+            
+            // Mostrar campos específicos del error si existen
+            if (errorJson.message) {
+              console.error('❌ DEBUG ERROR 400 - Mensaje:', errorJson.message);
+            }
+            if (errorJson.errors) {
+              console.error('❌ DEBUG ERROR 400 - Errores de validación:', errorJson.errors);
+            }
+            if (errorJson.fieldErrors) {
+              console.error('❌ DEBUG ERROR 400 - Errores por campo:', errorJson.fieldErrors);
+            }
+          } catch (jsonError) {
+            console.error('❌ DEBUG ERROR 400 - Error como texto:', errorBody);
+          }
+        } catch (readError) {
+          console.error('❌ DEBUG ERROR 400 - No se pudo leer el cuerpo del error');
+        }
         
         // Si es error 403, probablemente necesitas autenticación
         if (response.status === 403) {
           throw new Error('No tienes permisos para acceder a este recurso');
         }
         
-        throw new Error(`Error ${response.status}: ${errorText}`);
+        throw new Error(`Error ${response.status}: ${errorBody || response.statusText}`);
       }
       
-      return response.json();
+      const responseData = await response.json();
+      console.log('✅ DEBUG - Response data:', responseData);
+      return responseData;
+      
     } catch (error) {
       console.error('🚨 Error en API request:', error);
       throw error;
@@ -109,13 +140,17 @@ export const apiClient = {
   },
 
   post(endpoint: string, data: any) {
+    console.log('📤 DEBUG - Datos que se envían en POST:');
+    console.log('📤 DEBUG - Endpoint:', endpoint);
+    console.log('📤 DEBUG - Datos:', JSON.stringify(data, null, 2));
+    
     return this.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  put(endpoint: string, data: any) {
+  put(endpoint: string, data: any, p0: { params: { progreso: string; }; }) {
     return this.request(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),

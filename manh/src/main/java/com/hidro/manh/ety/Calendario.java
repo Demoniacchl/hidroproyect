@@ -22,6 +22,9 @@ public class Calendario {
     @JoinColumn(name = "id_equipo")
     private EquipoMotor equipo;
     
+    @Column(name = "id_ubicacion") 
+    private Long idUbicacion;
+
     @Enumerated(EnumType.STRING)
     private TipoEvento tipoEvento;
     
@@ -109,4 +112,7 @@ public class Calendario {
     
     public OrdenReparacion getOrdenReparacion() { return ordenReparacion; }
     public void setOrdenReparacion(OrdenReparacion ordenReparacion) { this.ordenReparacion = ordenReparacion; }
+
+    public Long getIdUbicacion() { return idUbicacion; }
+    public void setIdUbicacion(Object idUbicacion) { this.idUbicacion = (Long) idUbicacion; }
 }

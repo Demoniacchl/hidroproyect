@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { calendarioService, EventoCalendario } from '../../../services/calendario.service';
 import { ordenesService } from '../../../services/ordenes.service';
+import { solicitudesService } from '../../../services/solicitudes.service';
+import SignatureCanvas from '../../../components/SignatureCanvas';
 
 const FormularioMantencion: React.FC = () => {
   const { idEvento } = useParams<{ idEvento: string }>();
@@ -11,6 +13,7 @@ const FormularioMantencion: React.FC = () => {
   const [evento, setEvento] = useState<EventoCalendario | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [firmaCliente, setFirmaCliente] = useState<string>('');
   
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -22,7 +25,6 @@ const FormularioMantencion: React.FC = () => {
     voltaje: '',
     observaciones: '',
     tipoOrden: 'PREVENTIVA',
-    firmaCliente: '',
     
     // Checklist de mantención
     cambioRodamientos: 'NO',
@@ -63,7 +65,8 @@ const FormularioMantencion: React.FC = () => {
       const ahora = new Date();
       setFormData(prev => ({
         ...prev,
-        horaInicio: ahora.toTimeString().slice(0, 5)
+        horaInicio: ahora.toTimeString().slice(0, 5),
+        observaciones: eventoData.descripcion || ''
       }));
     } catch (error) {
       console.error('Error cargando evento:', error);
@@ -86,69 +89,96 @@ const FormularioMantencion: React.FC = () => {
     }));
   };
 
-  const handleGuardar = async () => {
-    if (!evento) return;
-    
-    try {
-      setSaving(true);
-      
-      // Crear la orden de mantención
-      const ordenMantencion = await ordenesService.createMantencion({
-        idMotor: evento.idEquipo || 0,
-        idTecnico: evento.idTecnico || 0,
-        idCliente: evento.idCliente,
-        idUbicacion: 0, // Esto debería venir del evento o buscarse
-        horaIngreso: `${new Date().toDateString()} ${formData.horaInicio}`,
-        horaSalida: formData.horaFin ? `${new Date().toDateString()} ${formData.horaFin}` : null,
-        r: formData.r ? parseFloat(formData.r) : null,
-        s: formData.s ? parseFloat(formData.s) : null,
-        t: formData.t ? parseFloat(formData.t) : null,
-        voltaje: formData.voltaje ? parseFloat(formData.voltaje) : null,
-        observaciones: formData.observaciones,
-        firmaCliente: formData.firmaCliente,
-        tipoOrden: formData.tipoOrden,
-        
-        // Checklist
-        cambioRodamientos: formData.cambioRodamientos,
-        cambioSello: formData.cambioSello,
-        cambioVoluta: formData.cambioVoluta,
-        rebobinoCampos: formData.rebobinoCampos,
-        proteccionesSaltadas: formData.proteccionesSaltadas,
-        cambioProtecciones: formData.cambioProtecciones,
-        contactoresQuemados: formData.contactoresQuemados,
-        cambioContactores: formData.cambioContactores,
-        cambioLucesPiloto: formData.cambioLucesPiloto,
-        limpioTablero: formData.limpioTablero,
-        cambioPresostato: formData.cambioPresostato,
-        cambioManometro: formData.cambioManometro,
-        cargoConAireEp: formData.cargoConAireEp,
-        revisoPresionEp: formData.revisoPresionEp,
-        cambioValvRetencion: formData.cambioValvRetencion,
-        suprimoFiltracion: formData.suprimoFiltracion,
-        revisoValvCompuerta: formData.revisoValvCompuerta,
-        revisoValvFlotador: formData.revisoValvFlotador,
-        revisoEstanqueAgua: formData.revisoEstanqueAgua,
-        revisoFittingsOtros: formData.revisoFittingsOtros
-      });
-
-      // Actualizar evento como completado
-      await calendarioService.updateEvento(evento.idCalendario, {
-        estado: 'COMPLETADO',
-        idOrdenMantenimiento: ordenMantencion.idOrden
-      });
-
-      // Crear solicitud de revisión (esto iría a un servicio de solicitudes)
-      // await solicitudesService.crearSolicitudRevisión(...);
-
-      navigate('/tecnico?mensaje=mantencion_guardada');
-
-    } catch (error) {
-      console.error('Error guardando mantención:', error);
-      alert('Error al guardar la mantención');
-    } finally {
-      setSaving(false);
-    }
+  const handleFirmaSave = (signatureData: string) => {
+    setFirmaCliente(signatureData);
   };
+
+  const handleFirmaClear = () => {
+    setFirmaCliente('');
+  };
+
+const handleGuardar = async () => {
+  if (!evento) return;
+  
+  if (!firmaCliente) {
+    alert('Por favor capture la firma del cliente antes de guardar');
+    return;
+  }
+
+  try {
+    setSaving(true);
+    
+        console.log('🔍 DEBUG INICIAL - Estado del formulario:');
+    console.log('🔍 formData:', formData);
+    console.log('🔍 evento:', evento);
+    console.log('🔍 firmaCliente length:', firmaCliente.length);
+    console.log('🔍 DEBUG: Iniciando proceso de guardado...');
+    
+    // Formatear fechas correctamente para el backend
+    const ahora = new Date();
+    const fechaBase = ahora.toISOString().split('T')[0];
+    
+    const horaIngreso = new Date(`${fechaBase}T${formData.horaInicio}:00`);
+    const horaSalida = formData.horaFin ? new Date(`${fechaBase}T${formData.horaFin}:00`) : null;
+
+    // Preparar datos para la orden
+    const ordenData = {
+      idMotor: evento.idEquipo || 0,
+      idTecnico: evento.idTecnico || 0,
+      idCliente: evento.idCliente,
+      idUbicacion: 0,
+      horaIngreso: horaIngreso.toISOString(),
+      horaSalida: horaSalida ? horaSalida.toISOString() : null,
+      r: formData.r ? parseFloat(formData.r) : null,
+      s: formData.s ? parseFloat(formData.s) : null,
+      t: formData.t ? parseFloat(formData.t) : null,
+      voltaje: formData.voltaje ? parseFloat(formData.voltaje) : null,
+      observaciones: formData.observaciones,
+      firmaCliente: firmaCliente,
+      tipoOrden: formData.tipoOrden,
+      
+      // Checklist
+      cambioRodamientos: formData.cambioRodamientos,
+      cambioSello: formData.cambioSello,
+      cambioVoluta: formData.cambioVoluta,
+      rebobinoCampos: formData.rebobinoCampos,
+      proteccionesSaltadas: formData.proteccionesSaltadas,
+      cambioProtecciones: formData.cambioProtecciones,
+      contactoresQuemados: formData.contactoresQuemados,
+      cambioContactores: formData.cambioContactores,
+      cambioLucesPiloto: formData.cambioLucesPiloto,
+      limpioTablero: formData.limpioTablero,
+      cambioPresostato: formData.cambioPresostato,
+      cambioManometro: formData.cambioManometro,
+      cargoConAireEp: formData.cargoConAireEp,
+      revisoPresionEp: formData.revisoPresionEp,
+      cambioValvRetencion: formData.cambioValvRetencion,
+      suprimoFiltracion: formData.suprimoFiltracion,
+      revisoValvCompuerta: formData.revisoValvCompuerta,
+      revisoValvFlotador: formData.revisoValvFlotador,
+      revisoEstanqueAgua: formData.revisoEstanqueAgua,
+      revisoFittingsOtros: formData.revisoFittingsOtros
+    };
+
+    console.log('🔍 DEBUG FINAL - Datos completos a enviar:');
+    console.log('🔍 DEBUG - JSON:', JSON.stringify(ordenData, null, 2));
+    console.log('🔍 DEBUG - Tipos de datos:');
+    Object.keys(ordenData).forEach(key => {
+      const value = ordenData[key];
+      console.log(`  ${key}: ${typeof value} = ${value}`);
+    });
+
+    // 1. CREAR ORDEN DE MANTENCIÓN
+    console.log('🔄 Paso 1: Creando orden de mantención...');
+    const ordenMantencion = await ordenesService.createMantencion(ordenData);
+    // ... resto del código igual
+  } catch (error) {
+    console.error('❌ ERROR en el proceso completo:', error);
+    alert('Error al guardar la mantención. Revisa la consola para más detalles.');
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleFinalizar = () => {
     const ahora = new Date();
@@ -157,6 +187,29 @@ const FormularioMantencion: React.FC = () => {
       horaFin: ahora.toTimeString().slice(0, 5)
     }));
   };
+
+  const checklistItems = [
+    { key: 'cambioRodamientos', label: 'Se cambió rodamiento' },
+    { key: 'cambioSello', label: 'Se cambió sello' },
+    { key: 'cambioVoluta', label: 'Se cambió voluta' },
+    { key: 'rebobinoCampos', label: 'Se rebobinó campos' },
+    { key: 'proteccionesSaltadas', label: 'Protecciones saltadas' },
+    { key: 'cambioProtecciones', label: 'Se cambió protecciones' },
+    { key: 'contactoresQuemados', label: 'Contactores quemados' },
+    { key: 'cambioContactores', label: 'Se cambió contactores' },
+    { key: 'cambioLucesPiloto', label: 'Se cambió luces piloto' },
+    { key: 'limpioTablero', label: 'Se limpió tablero' },
+    { key: 'cambioPresostato', label: 'Se cambió presostato' },
+    { key: 'cambioManometro', label: 'Se cambió manómetro' },
+    { key: 'cargoConAireEp', label: 'Se cargó con aire E.P.' },
+    { key: 'revisoPresionEp', label: 'Se revisó presión E.P.' },
+    { key: 'cambioValvRetencion', label: 'Se cambió válv. retención' },
+    { key: 'suprimoFiltracion', label: 'Se suprimió filtración' },
+    { key: 'revisoValvCompuerta', label: 'Se revisó válv. compuerta' },
+    { key: 'revisoValvFlotador', label: 'Se revisó válv. flotador' },
+    { key: 'revisoEstanqueAgua', label: 'Se revisó estanque agua' },
+    { key: 'revisoFittingsOtros', label: 'Se revisó fittings otros' }
+  ];
 
   if (loading) {
     return (
@@ -187,17 +240,17 @@ const FormularioMantencion: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-32">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="px-4 py-3">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
               <button 
                 onClick={() => navigate('/tecnico')}
-                className="mr-3 text-gray-600"
+                className="btn btn-ghost p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                ←
+                <span className="text-xl">←</span>
               </button>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">🛠️ Mantención</h1>
@@ -216,11 +269,13 @@ const FormularioMantencion: React.FC = () => {
         </div>
       </header>
 
-      <main className="px-4 py-4">
+      <main className="p-4 space-y-4">
         {/* Información del Evento */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <h2 className="font-semibold text-gray-900 mb-2">Información del Servicio</h2>
-          <div className="space-y-2 text-sm">
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">📋 Información del Servicio</h2>
+          </div>
+          <div className="card-content space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Cliente:</span>
               <span className="font-medium">#{evento.idCliente}</span>
@@ -237,19 +292,18 @@ const FormularioMantencion: React.FC = () => {
         </div>
 
         {/* Formulario Principal */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Datos de la Mantención</h2>
-          
-          <div className="space-y-4">
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">⚡ Datos de la Mantención</h2>
+          </div>
+          <div className="card-content space-y-4">
             {/* Tipo de Orden */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de Mantención *
-              </label>
+            <div className="form-group">
+              <label className="form-label">Tipo de Mantención</label>
               <select
                 value={formData.tipoOrden}
                 onChange={(e) => handleInputChange('tipoOrden', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="form-input"
               >
                 <option value="PREVENTIVA">Preventiva</option>
                 <option value="CORRECTIVA">Correctiva</option>
@@ -259,140 +313,125 @@ const FormularioMantencion: React.FC = () => {
 
             {/* Mediciones Eléctricas */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">R (A)</label>
+              <div className="form-group">
+                <label className="form-label">R (A)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.r}
                   onChange={(e) => handleInputChange('r', e.target.value)}
                   placeholder="0.00"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">S (A)</label>
+              <div className="form-group">
+                <label className="form-label">S (A)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.s}
                   onChange={(e) => handleInputChange('s', e.target.value)}
                   placeholder="0.00"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">T (A)</label>
+              <div className="form-group">
+                <label className="form-label">T (A)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.t}
                   onChange={(e) => handleInputChange('t', e.target.value)}
                   placeholder="0.00"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Voltaje (V)</label>
+              <div className="form-group">
+                <label className="form-label">Voltaje (V)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.voltaje}
                   onChange={(e) => handleInputChange('voltaje', e.target.value)}
                   placeholder="0.00"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="form-input"
                 />
               </div>
             </div>
 
             {/* Observaciones */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Observaciones
-              </label>
+            <div className="form-group">
+              <label className="form-label">Observaciones</label>
               <textarea
                 value={formData.observaciones}
                 onChange={(e) => handleInputChange('observaciones', e.target.value)}
                 rows={3}
                 placeholder="Describa el trabajo realizado, hallazgos, recomendaciones..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            {/* Firma del Cliente */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Firma del Cliente
-              </label>
-              <input
-                type="text"
-                value={formData.firmaCliente}
-                onChange={(e) => handleInputChange('firmaCliente', e.target.value)}
-                placeholder="Nombre y apellido del cliente"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="form-input"
               />
             </div>
           </div>
         </div>
 
         {/* Checklist de Mantención */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Checklist de Mantención</h2>
-          
-          <div className="space-y-3">
-            {[
-              { key: 'cambioRodamientos', label: 'Cambio de rodamientos' },
-              { key: 'cambioSello', label: 'Cambio de sello mecánico' },
-              { key: 'cambioVoluta', label: 'Cambio de voluta' },
-              { key: 'rebobinoCampos', label: 'Rebobino de campos' },
-              { key: 'proteccionesSaltadas', label: 'Protecciones saltadas' },
-              { key: 'cambioProtecciones', label: 'Cambio de protecciones' },
-              { key: 'contactoresQuemados', label: 'Contactores quemados' },
-              { key: 'cambioContactores', label: 'Cambio de contactores' },
-              { key: 'cambioLucesPiloto', label: 'Cambio de luces piloto' },
-              { key: 'limpioTablero', label: 'Limpieza de tablero' },
-              { key: 'cambioPresostato', label: 'Cambio de presostato' },
-              { key: 'cambioManometro', label: 'Cambio de manómetro' },
-              { key: 'cargoConAireEp', label: 'Carga con aire EP' },
-              { key: 'revisoPresionEp', label: 'Revisión presión EP' },
-              { key: 'cambioValvRetencion', label: 'Cambio válvula retención' },
-              { key: 'suprimoFiltracion', label: 'Supresión filtración' },
-              { key: 'revisoValvCompuerta', label: 'Revisión válvula compuerta' },
-              { key: 'revisoValvFlotador', label: 'Revisión válvula flotador' },
-              { key: 'revisoEstanqueAgua', label: 'Revisión estanque agua' },
-              { key: 'revisoFittingsOtros', label: 'Revisión fittings otros' }
-            ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between p-2 border border-gray-200 rounded-lg">
-                <span className="text-sm text-gray-700">{item.label}</span>
-                <div className="flex space-x-1">
-                  {['SI', 'NO', 'CB'].map((opcion) => (
-                    <button
-                      key={opcion}
-                      onClick={() => handleChecklistChange(item.key, opcion as any)}
-                      className={`px-2 py-1 text-xs rounded ${
-                        formData[item.key as keyof typeof formData] === opcion
-                          ? opcion === 'SI' ? 'bg-green-600 text-white' :
-                            opcion === 'NO' ? 'bg-red-600 text-white' :
-                            'bg-yellow-600 text-white'
-                          : 'bg-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {opcion}
-                    </button>
-                  ))}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">✅ Checklist de Mantención</h2>
+          </div>
+          <div className="card-content">
+            <div className="checklist-container">
+              {checklistItems.map((item) => (
+                <div key={item.key} className="checklist-item">
+                  <span className="checklist-label">{item.label}</span>
+                  <div className="checklist-options">
+                    {[
+                      { value: 'SI', label: 'S', type: 'si' },
+                      { value: 'NO', label: 'N', type: 'no' },
+                      { value: 'CB', label: 'CB', type: 'cb' }
+                    ].map((opcion) => (
+                      <button
+                        key={opcion.value}
+                        type="button"
+                        onClick={() => handleChecklistChange(item.key, opcion.value as any)}
+                        className={`checklist-btn ${opcion.type} ${
+                          formData[item.key as keyof typeof formData] === opcion.value ? 'active' : ''
+                        }`}
+                      >
+                        {opcion.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* FIRMA DEL CLIENTE - AL FINAL */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">✍️ Firma del Cliente *</h2>
+          </div>
+          <div className="card-content">
+            <SignatureCanvas 
+              onSave={handleFirmaSave}
+              onClear={handleFirmaClear}
+            />
+            {firmaCliente && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700 font-medium">✅ Firma capturada correctamente</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </main>
 
       {/* Botones Fijos Abajo */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <div className="flex space-x-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div className="flex gap-3 max-w-md mx-auto">
           <button
             onClick={() => navigate('/tecnico')}
-            className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg font-medium"
+            className="btn btn-outline flex-1 py-3"
           >
             Cancelar
           </button>
@@ -400,17 +439,24 @@ const FormularioMantencion: React.FC = () => {
           {!formData.horaFin ? (
             <button
               onClick={handleFinalizar}
-              className="flex-1 bg-orange-600 text-white py-3 px-4 rounded-lg font-medium"
+              className="btn btn-warning flex-1 py-3"
             >
               Finalizar Trabajo
             </button>
           ) : (
             <button
               onClick={handleGuardar}
-              disabled={saving}
-              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50"
+              disabled={saving || !firmaCliente}
+              className="btn btn-primary flex-1 py-3"
             >
-              {saving ? 'Guardando...' : 'Enviar a Revisión'}
+              {saving ? (
+                <span className="flex items-center gap-2">
+                  <div className="spinner-small"></div>
+                  Guardando...
+                </span>
+              ) : (
+                'Enviar a Revisión'
+              )}
             </button>
           )}
         </div>

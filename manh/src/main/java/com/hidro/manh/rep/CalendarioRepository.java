@@ -21,8 +21,10 @@ public interface CalendarioRepository extends JpaRepository<Calendario, Long> {
     
     List<Calendario> findByTipoEvento(TipoEvento tipoEvento);
     
-    List<Calendario> findByEstado(EstadoEvento estado);
-    
+List<Calendario> findByIdUbicacion(Long idUbicacion);
+List<Calendario> findByEstado(EstadoEvento estado);
+List<Calendario> findByTecnicoIdUsuarioAndEstado(Long tecnicoId, EstadoEvento estado);
+
     List<Calendario> findByNotificadoFalseAndFechaInicioBetween(LocalDateTime now, LocalDateTime future);
     
     @Query("SELECT c FROM Calendario c WHERE c.cliente.idCliente = :clienteId")

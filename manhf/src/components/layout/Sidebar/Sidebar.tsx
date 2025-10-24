@@ -29,8 +29,6 @@ const tecnicoNavigation = [
   { id: 'tareas-pendientes', label: 'Tareas Pendientes', icon: '⏳' },
   { id: 'nueva-mantencion', label: 'Nueva Mantención', icon: '🛠️' },
   { id: 'nueva-reparacion', label: 'Nueva Reparación', icon: '🔧' },
-  { id: 'historial', label: 'Mi Historial', icon: '📋' },
-  { id: 'calendario', label: 'Mi Calendario', icon: '🗓️' },
 ];
 
   // Navegación específica para SUPER_ADMIN

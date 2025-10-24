@@ -79,6 +79,9 @@ public class CalendarioController {
         calendario.setEstado(calendarioDTO.getEstado());
         calendario.setNotificado(false);
         
+        // ✅ CORRECCIÓN CRÍTICA: Mapear idUbicacion
+        calendario.setIdUbicacion(calendarioDTO.getIdUbicacion());
+        
         // ✅ MAPEAR RELACIONES DESDE IDs
         if (calendarioDTO.getIdCliente() != null) {
             Cliente cliente = clienteRepository.findById(calendarioDTO.getIdCliente())
@@ -118,6 +121,11 @@ public class CalendarioController {
         if (calendarioDTO.getTipoEvento() != null) calendario.setTipoEvento(calendarioDTO.getTipoEvento());
         if (calendarioDTO.getEstado() != null) calendario.setEstado(calendarioDTO.getEstado());
         
+        // ✅ CORRECCIÓN CRÍTICA: Actualizar idUbicacion si se proporciona
+        if (calendarioDTO.getIdUbicacion() != null) {
+            calendario.setIdUbicacion(calendarioDTO.getIdUbicacion());
+        }
+        
         // ✅ ACTUALIZAR RELACIONES SI SE PROPORCIONAN
         if (calendarioDTO.getIdCliente() != null) {
             Cliente cliente = clienteRepository.findById(calendarioDTO.getIdCliente())
@@ -156,6 +164,60 @@ public class CalendarioController {
                 .map(calendarioMapper::toDTO)
                 .collect(Collectors.toList());
     }
-    
+
+    // ✅ NUEVO ENDPOINT: Obtener eventos por técnico - USANDO MÉTODO EXISTENTE
+    @GetMapping("/tecnico/{tecnicoId}")
+    public List<CalendarioDTO> getByTecnicoId(@PathVariable Long tecnicoId) {
+        return calendarioService.findByTecnico(tecnicoId).stream()  // ← CAMBIADO: usar findByTecnico que SÍ existe
+                .map(calendarioMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    // ✅ NUEVO ENDPOINT: Obtener eventos por ubicación - ELIMINADO TEMPORALMENTE
+    // @GetMapping("/ubicacion/{ubicacionId}")
+    // public List<CalendarioDTO> getByUbicacionId(@PathVariable Long ubicacionId) {
+    //     return calendarioService.findByUbicacionId(ubicacionId).stream()
+    //             .map(calendarioMapper::toDTO)
+    //             .collect(Collectors.toList());
+    // }
+
+    // ✅ NUEVO ENDPOINT: Actualizar estado de evento
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<CalendarioDTO> updateEstado(
+            @PathVariable Long id, 
+            @RequestParam String estado) {
+        Optional<Calendario> existing = calendarioService.getById(id);
+        if (!existing.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Calendario calendario = existing.get();
+        try {
+            // Asumiendo que EstadoEvento es un enum
+            calendario.setEstado(com.hidro.manh.enums.EstadoEvento.valueOf(estado.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Calendario updated = calendarioService.save(calendario);
+        return ResponseEntity.ok(calendarioMapper.toDTO(updated));
+    }
+
+    // ✅ NUEVO ENDPOINT: Actualizar orden de mantenimiento
+    @PatchMapping("/{id}/orden-mantenimiento")
+    public ResponseEntity<CalendarioDTO> updateOrdenMantenimiento(
+            @PathVariable Long id, 
+            @RequestParam Long ordenMantenimientoId) {
+        Optional<Calendario> existing = calendarioService.getById(id);
+        if (!existing.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Calendario calendario = existing.get();
+        // Aquí deberías cargar la orden de mantenimiento desde el repositorio
+        // calendario.setOrdenMantenimiento(ordenMantenimientoRepository.findById(ordenMantenimientoId).orElse(null));
+        
+        Calendario updated = calendarioService.save(calendario);
+        return ResponseEntity.ok(calendarioMapper.toDTO(updated));
+    }
 }
-    

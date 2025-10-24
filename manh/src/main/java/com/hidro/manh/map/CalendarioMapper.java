@@ -39,7 +39,7 @@ public class CalendarioMapper {
     @Autowired
     private OrdenReparacionRepository ordenReparacionRepository;
 
-    // Convertir Entidad a DTO
+    // Convertir Entidad a DTO - VERSIÓN CORREGIDA
     public CalendarioDTO toDTO(Calendario calendario) {
         if (calendario == null) {
             return null;
@@ -73,6 +73,9 @@ public class CalendarioMapper {
             dto.setNombreTecnico(calendario.getTecnico().getNombre());
         }
 
+        // ✅ CORRECCIÓN CRÍTICA: Mapear idUbicacion desde la entidad
+        dto.setIdUbicacion(calendario.getIdUbicacion());
+
         // Mapear relaciones OrdenMantenimiento
         if (calendario.getOrdenMantenimiento() != null) {
             dto.setIdOrdenMantenimiento(calendario.getOrdenMantenimiento().getIdOrden());
@@ -93,7 +96,7 @@ public class CalendarioMapper {
                 .collect(Collectors.toList());
     }
 
-    // Convertir CreateDTO a Entidad
+    // Convertir CreateDTO a Entidad - VERSIÓN CORREGIDA
     public Calendario toEntity(CreateCalendarioDTO dto) {
         if (dto == null) {
             return null;
@@ -107,6 +110,9 @@ public class CalendarioMapper {
         calendario.setFechaFin(dto.getFechaFin());
         calendario.setEstado(dto.getEstado());
         calendario.setNotificado(false);
+
+        // ✅ CORRECCIÓN: Mapear idUbicacion al crear entidad
+        calendario.setIdUbicacion(dto.getIdUbicacion());
 
         // Mapear relaciones desde IDs
         if (dto.getIdCliente() != null) {
@@ -133,7 +139,7 @@ public class CalendarioMapper {
         return calendario;
     }
 
-    // Actualizar Entidad desde UpdateDTO
+    // Actualizar Entidad desde UpdateDTO - VERSIÓN CORREGIDA
     public Calendario updateEntityFromDTO(Calendario calendario, UpdateCalendarioDTO dto) {
         if (dto == null) {
             return calendario;
@@ -163,6 +169,11 @@ public class CalendarioMapper {
             calendario.setEstado(dto.getEstado());
         }
 
+        // ✅ CORRECCIÓN: Actualizar idUbicacion si se proporciona
+        if (dto.getIdUbicacion() != null) {
+            calendario.setIdUbicacion(dto.getIdUbicacion());
+        }
+
         // Actualizar relaciones si se proporcionan
         if (dto.getIdCliente() != null) {
             Cliente cliente = clienteRepository.findById(dto.getIdCliente())
@@ -188,7 +199,7 @@ public class CalendarioMapper {
         return calendario;
     }
 
-    // Método para crear DTO básico (sin relaciones complejas)
+    // Método para crear DTO básico (sin relaciones complejas) - VERSIÓN CORREGIDA
     public CalendarioDTO toBasicDTO(Calendario calendario) {
         if (calendario == null) {
             return null;
@@ -203,6 +214,9 @@ public class CalendarioMapper {
         dto.setFechaFin(calendario.getFechaFin());
         dto.setEstado(calendario.getEstado());
         dto.setNotificado(calendario.getNotificado());
+        
+        // ✅ CORRECCIÓN: Incluir idUbicacion en DTO básico
+        dto.setIdUbicacion(calendario.getIdUbicacion());
 
         return dto;
     }

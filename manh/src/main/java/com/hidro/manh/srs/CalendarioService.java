@@ -2,13 +2,16 @@ package com.hidro.manh.srs;
 
 import com.hidro.manh.ety.Calendario;
 import com.hidro.manh.ety.Cliente;
+import com.hidro.manh.dto.CalendarioDTO;
 import com.hidro.manh.enums.TipoEvento;
 import com.hidro.manh.rep.CalendarioRepository;
 import com.hidro.manh.rep.ClienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -90,5 +93,10 @@ public class CalendarioService {
         } else {
             throw new RuntimeException("Evento no encontrado con id: " + id);
         }
+    }
+
+    public Collection<CalendarioDTO> findByUbicacionId(Long ubicacionId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findByUbicacionId'");
     }
 }
