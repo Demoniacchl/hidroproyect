@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCalendario } from '../../../hooks/useCalendario';
 import { useClientes } from '../../../hooks/useClientes';
-import { useUbicacion } from '../../../hooks/useUbicacion'; // ← CORREGIDO: singular
+import { useUbicacion } from '../../../hooks/useUbicacion';
 import type { EventoCreateRequest } from '../../../services/calendario.service';
 
 const CalendarioView: React.FC = () => {
@@ -17,7 +17,7 @@ const CalendarioView: React.FC = () => {
   } = useCalendario();
 
   const { clientes } = useClientes();
-  const { ubicaciones, cargarUbicacionesPorCliente, loading: loadingUbicaciones } = useUbicacion(); // ← CORREGIDO: singular
+  const { ubicaciones, cargarUbicacionesPorCliente, loading: loadingUbicaciones } = useUbicacion();
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -25,6 +25,9 @@ const CalendarioView: React.FC = () => {
   const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
   const [showEditarEventoModal, setShowEditarEventoModal] = useState(false);
   const [eventoEditando, setEventoEditando] = useState<any>(null);
+  
+  // Cache para ubicaciones ya cargadas - AHORA USAMOS LAS UBICACIONES DE CLIENTES
+  const [ubicacionesCache, setUbicacionesCache] = useState<Map<number, any[]>>(new Map());
   
   const [nuevoEvento, setNuevoEvento] = useState<EventoCreateRequest>({
     idCliente: 0,
@@ -44,21 +47,58 @@ const CalendarioView: React.FC = () => {
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
+  // SOLUCIÓN: Usar las ubicaciones que ya vienen en los clientes
+  useEffect(() => {
+    if (clientes.length > 0) {
+      const nuevoCache = new Map<number, any[]>();
+      
+      clientes.forEach(cliente => {
+        if (cliente.ubicaciones && cliente.ubicaciones.length > 0) {
+          nuevoCache.set(cliente.idCliente, cliente.ubicaciones);
+        }
+      });
+      
+      setUbicacionesCache(nuevoCache);
+    }
+  }, [clientes]);
+
   // Cargar ubicaciones cuando cambia el cliente seleccionado en NUEVO evento
   useEffect(() => {
     if (nuevoEvento.idCliente > 0) {
-      cargarUbicacionesPorCliente(nuevoEvento.idCliente);
-      // Resetear ubicación cuando cambia el cliente
       setNuevoEvento(prev => ({ ...prev, idUbicacion: 0 }));
     }
   }, [nuevoEvento.idCliente]);
 
-  // Cargar ubicaciones cuando se abre el modal de EDITAR evento
-  useEffect(() => {
-    if (eventoEditando?.idCliente) {
-      cargarUbicacionesPorCliente(eventoEditando.idCliente);
+  // Obtener ubicaciones del cliente actual del cache
+  const getUbicacionesActuales = () => {
+    const clienteId = nuevoEvento.idCliente > 0 ? nuevoEvento.idCliente : eventoEditando?.idCliente;
+    if (clienteId && ubicacionesCache.has(clienteId)) {
+      return ubicacionesCache.get(clienteId) || [];
     }
-  }, [eventoEditando]);
+    return [];
+  };
+
+  // Obtener nombre de la ubicación (versión optimizada)
+  const getNombreUbicacion = (idUbicacion: number) => {
+    if (!idUbicacion) return 'No asignada';
+    
+    // Buscar en todas las ubicaciones cacheadas
+    for (let ubicaciones of ubicacionesCache.values()) {
+      const ubicacion = ubicaciones.find(u => u.idUbicacion === idUbicacion);
+      if (ubicacion) {
+        return `${ubicacion.nombre} - ${ubicacion.calle} ${ubicacion.numero}, ${ubicacion.comuna}`;
+      }
+    }
+    return `Ubicación #${idUbicacion}`;
+  };
+
+  // Obtener nombre del cliente
+  const getNombreCliente = (idCliente: number) => {
+    const cliente = clientes.find(c => c.idCliente === idCliente);
+    return cliente ? cliente.nombre1 : `Cliente #${idCliente}`;
+  };
+
+  const ubicacionesActuales = getUbicacionesActuales();
 
   // Función para verificar año bisiesto
   const esBisiesto = (year: number): boolean => {
@@ -268,18 +308,6 @@ const CalendarioView: React.FC = () => {
       fecha.getMonth() === hoy.getMonth() &&
       fecha.getFullYear() === hoy.getFullYear()
     );
-  };
-
-  // Obtener nombre de la ubicación
-  const getNombreUbicacion = (idUbicacion: number) => {
-    const ubicacion = ubicaciones.find(u => u.idUbicacion === idUbicacion);
-    return ubicacion ? `${ubicacion.nombre} - ${ubicacion.calle} ${ubicacion.numero}` : `Ubicación #${idUbicacion}`;
-  };
-
-  // Obtener nombre del cliente
-  const getNombreCliente = (idCliente: number) => {
-    const cliente = clientes.find(c => c.idCliente === idCliente);
-    return cliente ? cliente.nombre1 : `Cliente #${idCliente}`;
   };
 
   return (
@@ -523,7 +551,7 @@ const CalendarioView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal para Nuevo Evento */}
+      {/* Modal para Nuevo Evento - CORREGIDO */}
       {showNuevoEventoModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -571,17 +599,19 @@ const CalendarioView: React.FC = () => {
                   className="input"
                   value={nuevoEvento.idUbicacion}
                   onChange={(e) => setNuevoEvento({...nuevoEvento, idUbicacion: parseInt(e.target.value)})}
-                  disabled={!nuevoEvento.idCliente || loadingUbicaciones}
+                  disabled={!nuevoEvento.idCliente || ubicacionesActuales.length === 0}
                 >
                   <option value={0}>
-                    {!nuevoEvento.idCliente ? 'Seleccione un cliente primero' : 
-                     loadingUbicaciones ? 'Cargando ubicaciones...' :
-                     ubicaciones.length === 0 ? 'No hay ubicaciones para este cliente' : 
-                     'Seleccionar ubicación'}
+                    {!nuevoEvento.idCliente 
+                      ? 'Seleccione un cliente primero' 
+                      : ubicacionesActuales.length === 0 
+                        ? 'No hay ubicaciones para este cliente' 
+                        : 'Seleccionar ubicación'
+                    }
                   </option>
-                  {ubicaciones.map(ubicacion => (
+                  {ubicacionesActuales.map(ubicacion => (
                     <option key={ubicacion.idUbicacion} value={ubicacion.idUbicacion}>
-                      {ubicacion.nombre} - {ubicacion.calle} {ubicacion.numero}
+                      {ubicacion.nombre} - {ubicacion.calle} {ubicacion.numero}, {ubicacion.comuna}
                     </option>
                   ))}
                 </select>
@@ -654,7 +684,7 @@ const CalendarioView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal para Editar Evento */}
+      {/* Modal para Editar Evento - CORREGIDO */}
       {showEditarEventoModal && eventoEditando && (
         <div className="modal-overlay">
           <div className="modal">
@@ -700,15 +730,17 @@ const CalendarioView: React.FC = () => {
                   className="input"
                   value={eventoEditando.idUbicacion}
                   onChange={(e) => setEventoEditando({...eventoEditando, idUbicacion: parseInt(e.target.value)})}
-                  disabled={loadingUbicaciones}
+                  disabled={ubicacionesActuales.length === 0}
                 >
                   <option value={0}>
-                    {loadingUbicaciones ? 'Cargando ubicaciones...' : 
-                     ubicaciones.length === 0 ? 'No hay ubicaciones para este cliente' : 'Seleccionar ubicación'}
+                    {ubicacionesActuales.length === 0 
+                      ? 'No hay ubicaciones para este cliente' 
+                      : 'Seleccionar ubicación'
+                    }
                   </option>
-                  {ubicaciones.map(ubicacion => (
+                  {ubicacionesActuales.map(ubicacion => (
                     <option key={ubicacion.idUbicacion} value={ubicacion.idUbicacion}>
-                      {ubicacion.nombre} - {ubicacion.calle} {ubicacion.numero}
+                      {ubicacion.nombre} - {ubicacion.calle} {ubicacion.numero}, {ubicacion.comuna}
                     </option>
                   ))}
                 </select>

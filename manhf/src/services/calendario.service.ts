@@ -18,6 +18,7 @@ export interface EventoCreateRequest {
   idCliente: number;
   idEquipo?: number | null;
   idTecnico: number | null;
+  idUbicacion?: number | null;
   tipoEvento: string;
   titulo: string;
   descripcion: string;

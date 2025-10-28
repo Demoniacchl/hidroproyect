@@ -89,6 +89,7 @@ public class CalendarioService {
             evento.setTipoEvento(updatedEvento.getTipoEvento());
             evento.setTecnico(updatedEvento.getTecnico());
             evento.setCliente(updatedEvento.getCliente());
+            evento.setIdUbicacion(updatedEvento.getIdUbicacion());
             return calendarioRepository.save(evento);
         } else {
             throw new RuntimeException("Evento no encontrado con id: " + id);
