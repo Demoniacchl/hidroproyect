@@ -56,13 +56,18 @@ export const apiClient = {
       ...options,
     };
 
-    console.log('🔐 Haciendo request a:', url, token ? 'CON token' : 'SIN token');
+    console.log('🔐 Haciendo request a:', url);
+    console.log('🔐 Token presente:', !!token);
+    console.log('🔐 Método:', config.method);
 
     try {
       const response = await fetch(url, config);
       
-      // DEBUG DETALLADO PARA ERRORES
+      // OBTENER EL TEXTO DE LA RESPUESTA PRIMERO (éxito o error)
+      const responseText = await response.text();
+      
       console.log('🔍 DEBUG - Response status:', response.status, response.statusText);
+      console.log('🔍 DEBUG - Response body RAW:', responseText);
       
       if (response.status === 401) {
         console.error('❌ Token inválido o expirado');
@@ -73,43 +78,48 @@ export const apiClient = {
       }
       
       if (!response.ok) {
-        // OBTENER DETALLES COMPLETOS DEL ERROR 400
-        let errorBody = '';
-        try {
-          errorBody = await response.text();
-          console.error('❌ DEBUG ERROR 400 - Cuerpo completo del error:', errorBody);
-          
-          // Intentar mostrar el error de forma más legible
+        console.error('❌❌❌ ERROR 400 DETECTADO ❌❌❌');
+        console.error('❌ URL:', url);
+        console.error('❌ Status:', response.status, response.statusText);
+        console.error('❌ Response body:', responseText);
+        
+        // Intentar parsear como JSON para mejor legibilidad
+        if (responseText) {
           try {
-            const errorJson = JSON.parse(errorBody);
-            console.error('❌ DEBUG ERROR 400 - JSON parseado:', JSON.stringify(errorJson, null, 2));
+            const errorJson = JSON.parse(responseText);
+            console.error('❌ ERROR JSON PARSED:', JSON.stringify(errorJson, null, 2));
             
             // Mostrar campos específicos del error si existen
             if (errorJson.message) {
-              console.error('❌ DEBUG ERROR 400 - Mensaje:', errorJson.message);
+              console.error('❌ ERROR MESSAGE:', errorJson.message);
+            }
+            if (errorJson.error) {
+              console.error('❌ ERROR FIELD:', errorJson.error);
             }
             if (errorJson.errors) {
-              console.error('❌ DEBUG ERROR 400 - Errores de validación:', errorJson.errors);
+              console.error('❌ VALIDATION ERRORS:', errorJson.errors);
             }
             if (errorJson.fieldErrors) {
-              console.error('❌ DEBUG ERROR 400 - Errores por campo:', errorJson.fieldErrors);
+              console.error('❌ FIELD ERRORS:', errorJson.fieldErrors);
+            }
+            if (errorJson.path) {
+              console.error('❌ ERROR PATH:', errorJson.path);
+            }
+            if (errorJson.timestamp) {
+              console.error('❌ ERROR TIMESTAMP:', errorJson.timestamp);
             }
           } catch (jsonError) {
-            console.error('❌ DEBUG ERROR 400 - Error como texto:', errorBody);
+            console.error('❌ ERROR BODY (RAW TEXT):', responseText);
           }
-        } catch (readError) {
-          console.error('❌ DEBUG ERROR 400 - No se pudo leer el cuerpo del error');
+        } else {
+          console.error('❌ ERROR: Response body está vacío');
         }
         
-        // Si es error 403, probablemente necesitas autenticación
-        if (response.status === 403) {
-          throw new Error('No tienes permisos para acceder a este recurso');
-        }
-        
-        throw new Error(`Error ${response.status}: ${errorBody || response.statusText}`);
+        throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
       }
       
-      const responseData = await response.json();
+      // Si fue exitoso, parsear la respuesta
+      const responseData = responseText ? JSON.parse(responseText) : {};
       console.log('✅ DEBUG - Response data:', responseData);
       return responseData;
       
@@ -140,9 +150,14 @@ export const apiClient = {
   },
 
   post(endpoint: string, data: any) {
-    console.log('📤 DEBUG - Datos que se envían en POST:');
-    console.log('📤 DEBUG - Endpoint:', endpoint);
-    console.log('📤 DEBUG - Datos:', JSON.stringify(data, null, 2));
+    console.log('📤📤📤 DEBUG POST - Datos que se envían:');
+    console.log('📤 Endpoint:', endpoint);
+    console.log('📤 Datos completos:', JSON.stringify(data, null, 2));
+    console.log('📤 Tipos de datos:', Object.keys(data).map(key => ({
+      campo: key,
+      valor: data[key],
+      tipo: typeof data[key]
+    })));
     
     return this.request(endpoint, {
       method: 'POST',
@@ -150,7 +165,7 @@ export const apiClient = {
     });
   },
 
-  put(endpoint: string, data: any, p0: { params: { progreso: string; }; }) {
+  put(endpoint: string, data: any) {
     return this.request(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -163,3 +178,6 @@ export const apiClient = {
     });
   },
 };
+
+// ✅ Exportar ambos clientes
+export default apiClient;

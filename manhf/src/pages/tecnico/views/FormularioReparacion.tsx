@@ -1,4 +1,4 @@
-// src/pages/tecnicos/views/FormularioReparacion.tsx (Actualizado)
+// src/pages/tecnicos/views/FormularioReparacion.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { calendarioService, EventoCalendario } from '../../../services/calendario.service';
@@ -15,6 +15,7 @@ const FormularioReparacion: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [firmaCliente, setFirmaCliente] = useState<string>('');
+  const [usuarioLogueado, setUsuarioLogueado] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split('T')[0],
@@ -29,6 +30,7 @@ const FormularioReparacion: React.FC = () => {
     if (idEvento) {
       cargarEvento();
     }
+    cargarUsuarioLogueado();
   }, [idEvento]);
 
   const cargarEvento = async () => {
@@ -49,6 +51,48 @@ const FormularioReparacion: React.FC = () => {
       console.error('Error cargando evento:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarUsuarioLogueado = () => {
+    try {
+      console.log('🔍 Buscando usuario logueado...');
+      
+      // Buscar en TODAS las posibles keys del localStorage
+      const possibleKeys = ['user', 'currentUser', 'usuario', 'auth', 'authState', 'userData', 'userInfo'];
+      let userFound = null;
+      
+      for (const key of possibleKeys) {
+        const data = localStorage.getItem(key);
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            console.log(`🔍 Encontrado en ${key}:`, parsed);
+            userFound = parsed;
+            break;
+          } catch (e) {
+            console.log(`🔍 ${key} no es JSON válido`);
+          }
+        }
+      }
+      
+      if (userFound) {
+        setUsuarioLogueado(userFound);
+        
+        // Buscar el ID en diferentes campos posibles
+        const idTecnico = userFound.idUsuario || userFound.id || userFound.usuarioId || 
+                          userFound.userId || userFound.technicianId || userFound.tecnicoId;
+        
+        console.log('🔍 ID encontrado:', idTecnico);
+        console.log('🔍 Todos los campos del usuario:', Object.keys(userFound));
+        
+      } else {
+        console.warn('⚠️ No se encontró usuario en ninguna key del localStorage');
+        console.warn('⚠️ Keys disponibles:', Object.keys(localStorage));
+      }
+      
+    } catch (error) {
+      console.error('Error cargando usuario:', error);
     }
   };
 
@@ -78,17 +122,60 @@ const FormularioReparacion: React.FC = () => {
     try {
       setSaving(true);
       
-      // Crear la orden de reparación
-      const ordenReparacion = await ordenesService.createReparacion({
-        idMotor: evento.idEquipo || 0,
-        idTecnico: evento.idTecnico || 0,
-        idCliente: evento.idCliente,
-        idUbicacion: 0,
-        fecha: `${formData.fecha}T12:00:00`,
+      // OBTENER EL ID DEL TÉCNICO LOGUEADO CON MÚLTIPLES INTENTOS
+      let idTecnicoLogueado = null;
+      
+      if (usuarioLogueado) {
+        // Buscar en diferentes campos posibles
+        idTecnicoLogueado = usuarioLogueado.idUsuario || 
+                           usuarioLogueado.id || 
+                           usuarioLogueado.usuarioId ||
+                           usuarioLogueado.userId ||
+                           usuarioLogueado.technicianId;
+      }
+      
+      // Si no encontramos, buscar directamente en localStorage
+      if (!idTecnicoLogueado) {
+        console.log('🔍 Buscando ID directamente en localStorage...');
+        const userData = localStorage.getItem('user') || localStorage.getItem('currentUser');
+        if (userData) {
+          try {
+            const user = JSON.parse(userData);
+            idTecnicoLogueado = user.idUsuario || user.id;
+          } catch (e) {
+            console.error('Error parseando user data:', e);
+          }
+        }
+      }
+      
+      // Si aún no encontramos, usar un valor por defecto TEMPORAL
+      if (!idTecnicoLogueado) {
+        console.warn('⚠️ No se pudo obtener ID del técnico, usando valor temporal');
+        idTecnicoLogueado = 2; // Valor temporal para testing
+      }
+      
+      console.log('🔰 ID Técnico final:', idTecnicoLogueado);
+      console.log('🔰 IDs del evento - Motor:', evento.idEquipo, 'Cliente:', evento.idCliente, 'Ubicacion:', evento.idUbicacion);
+      
+      // USAR LOS IDs CORRECTOS:
+      // - Cliente, Ubicación, Motor: Del evento (creado por admin)
+      // - Técnico: Del usuario logueado (el que hace el formulario)
+      const datosReparacion = {
+        idMotor: evento.idEquipo || 3,           // ← Del evento (con fallback)
+        idTecnico: idTecnicoLogueado,            // ← Del usuario logueado
+        idCliente: evento.idCliente || 1,        // ← Del evento (con fallback)
+        idUbicacion: evento.idUbicacion || 4,    // ← Del evento (con fallback)
+        fecha: new Date().toISOString(),
         observaciones: `${formData.diagnostico}\n\nTrabajo realizado: ${formData.observaciones}\nMateriales: ${formData.materialesUtilizados}\nTiempo: ${formData.tiempoTrabajo}`,
         progreso: formData.progreso,
-        firmaCliente: firmaCliente // Firma digital
-      });
+        firmaCliente: firmaCliente
+      };
+
+      console.log('🔴🔴🔰 Datos finales a enviar:', datosReparacion);
+
+      // Crear la orden de reparación
+      const ordenReparacion = await ordenesService.createReparacion(datosReparacion);
+      console.log('🟢🟢🟢 RESPUESTA EXITOSA:', ordenReparacion);
 
       // Actualizar evento según el progreso
       const nuevoEstado = formData.progreso === 'REALIZADO' ? 'COMPLETADO' : 'EN_PROCESO';
@@ -100,8 +187,8 @@ const FormularioReparacion: React.FC = () => {
       navigate('/tecnico?mensaje=reparacion_guardada');
 
     } catch (error) {
-      console.error('Error guardando reparación:', error);
-      alert('Error al guardar la reparación');
+      console.error('🔴🔴🔴 Error guardando reparación:', error);
+      alert('Error al guardar la reparación: ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -155,8 +242,13 @@ const FormularioReparacion: React.FC = () => {
                 <p className="text-xs text-gray-600">{evento.titulo}</p>
               </div>
             </div>
-            <div className={`badge ${esEmergencia ? 'badge-danger' : 'badge-warning'}`}>
-              {esEmergencia ? 'URGENTE' : 'REPARACIÓN'}
+            <div className="flex items-center gap-2">
+              <div className={`badge ${esEmergencia ? 'badge-danger' : 'badge-warning'}`}>
+                {esEmergencia ? 'URGENTE' : 'REPARACIÓN'}
+              </div>
+              <div className="text-xs text-gray-500">
+                Técnico: {usuarioLogueado ? (usuarioLogueado.nombre || usuarioLogueado.username || 'Usuario') : 'No identificado'}
+              </div>
             </div>
           </div>
         </div>
@@ -178,6 +270,16 @@ const FormularioReparacion: React.FC = () => {
               <span className="font-medium">#{evento.idEquipo || 'N/A'}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-gray-600">Ubicación:</span>
+              <span className="font-medium">#{evento.idUbicacion || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Técnico asignado:</span>
+              <span className="font-medium">
+                {usuarioLogueado ? (usuarioLogueado.nombre || usuarioLogueado.username || 'Usuario') : 'No identificado'}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-gray-600">Prioridad:</span>
               <span className="font-medium">{esEmergencia ? 'ALTA' : 'MEDIA'}</span>
             </div>
@@ -193,24 +295,47 @@ const FormularioReparacion: React.FC = () => {
             {/* Estado del Progreso */}
             <div className="form-group">
               <label className="form-label">Estado de la Reparación *</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 'EN_GESTION', label: 'En Gestión', color: 'bg-yellow-500' },
-                  { value: 'REALIZADO', label: 'Realizado', color: 'bg-green-500' },
-                  { value: 'NO_REALIZADO', label: 'No Realizado', color: 'bg-red-500' }
-                ].map((opcion) => (
-                  <button
-                    key={opcion.value}
-                    onClick={() => handleInputChange('progreso', opcion.value)}
-                    className={`p-3 rounded-lg border text-center text-sm font-medium transition-all ${
-                      formData.progreso === opcion.value
-                        ? `${opcion.color} text-white border-transparent shadow-inner scale-95`
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {opcion.label}
-                  </button>
-                ))}
+              <div className="switch-tres-opciones">
+                <input 
+                  type="radio" 
+                  id="en_gestion" 
+                  name="estado_reparacion" 
+                  value="EN_GESTION"
+                  checked={formData.progreso === 'EN_GESTION'}
+                  onChange={(e) => handleInputChange('progreso', e.target.value)}
+                />
+                <label htmlFor="en_gestion" className="switch-option">
+                  <span className="switch-indicator"></span>
+                  <span className="switch-text">En Gestión</span>
+                </label>
+
+                <input 
+                  type="radio" 
+                  id="realizado" 
+                  name="estado_reparacion" 
+                  value="REALIZADO"
+                  checked={formData.progreso === 'REALIZADO'}
+                  onChange={(e) => handleInputChange('progreso', e.target.value)}
+                />
+                <label htmlFor="realizado" className="switch-option">
+                  <span className="switch-indicator"></span>
+                  <span className="switch-text">Realizado</span>
+                </label>
+
+                <input 
+                  type="radio" 
+                  id="no_realizado" 
+                  name="estado_reparacion" 
+                  value="NO_REALIZADO"
+                  checked={formData.progreso === 'NO_REALIZADO'}
+                  onChange={(e) => handleInputChange('progreso', e.target.value)}
+                />
+                <label htmlFor="no_realizado" className="switch-option">
+                  <span className="switch-indicator"></span>
+                  <span className="switch-text">No Realizado</span>
+                </label>
+                
+                <div className="switch-slider"></div>
               </div>
             </div>
 

@@ -36,7 +36,7 @@ public class OrdenReparacion {
     @Column(name = "progreso")
     private ProgresoReparacion progreso;
 
-    @Column(name = "firma_cliente", length = 200)
+    @Column(name = "firma_cliente", columnDefinition = "TEXT")
     private String firmaCliente;
 
     @ManyToOne(fetch = FetchType.LAZY)

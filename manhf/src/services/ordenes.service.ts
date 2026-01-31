@@ -1,43 +1,19 @@
-import { apiClient } from './api';
-
-export interface Cliente {
-  idCliente: number;          // Cambiado de id_cliente
-  nCliente: number;           // Cambiado de n_cliente
-  nombre1: string;
-  rut: string;
-}
-
-export interface Equipo {
-  idMotor: number;            // Cambiado de id_motor
-  tipo: string;
-  marca: string;
-  modelo: string;
-}
-
-export interface Tecnico {
-  idUsuario: number;          // Cambiado de id_usuario
-  nombre: string;
-}
-
-export interface Ubicacion {
-  nombre: string;
-  calle: string;
-  numero: string;
-}
+// src/services/ordenes.service.ts
+import apiClient from './api';
 
 export interface OrdenMantencion {
-  idOrden: number;            // Cambiado de id_orden
-  idMotor: number;            // Cambiado de id_motor
-  idTecnico: number;          // Cambiado de id_tecnico
-  horaIngreso: string;        // Cambiado de hora_ingreso
-  horaSalida: string;         // Cambiado de hora_salida
+  idOrden: number;
+  idMotor: number;
+  idTecnico: number;
+  horaIngreso: string;
+  horaSalida: string;
   r: number;
   s: number;
   t: number;
   voltaje: number;
   observaciones: string;
-  firmaCliente: string;       // Cambiado de firma_cliente
-  tipoOrden: string;          // Cambiado de tipo_orden
+  firmaCliente: string;
+  tipoOrden: string;
   campoAdicional?: string;
   cambioRodamientos?: string;
   cambioSello?: string;
@@ -59,14 +35,13 @@ export interface OrdenMantencion {
   revisoValvFlotador?: string;
   revisoEstanqueAgua?: string;
   revisoFittingsOtros?: string;
-  cliente?: Cliente;
-  equipo?: Equipo;
-  tecnico?: Tecnico;
-  ubicacion?: Ubicacion;
+  // ✅ CAMPOS AGREGADOS - Estos SÍ existen en el backend
+  idCliente: number;
+  idUbicacion: number;
 }
 
 export interface OrdenReparacion {
-  idOrdenReparacion: number;  // ← CAMBIADO de idOrden a idOrdenReparacion
+  idOrdenReparacion: number;
   idMotor: number;
   idTecnico: number;
   fecha: string;
@@ -74,9 +49,7 @@ export interface OrdenReparacion {
   progreso: string;
   firmaCliente: string;
   idCliente: number;
-  equipo?: Equipo;
-  tecnico?: Tecnico;
-  ubicacion?: Ubicacion;
+  idUbicacion: number;
 }
 
 export interface OrdenFilters {
@@ -94,17 +67,6 @@ export interface RangoFechas {
   inicio: string;
   fin: string;
 }
-
-// Helper para limpiar parámetros undefined/empty
-const cleanParams = (params: any): any => {
-  const cleaned: any = {};
-  Object.keys(params).forEach(key => {
-    if (params[key] !== undefined && params[key] !== '' && params[key] !== null) {
-      cleaned[key] = params[key];
-    }
-  });
-  return cleaned;
-};
 
 export const ordenesService = {
   /**
@@ -229,14 +191,27 @@ export const ordenesService = {
   },
 
   /**
-   * Crear nueva orden de mantención
+   * Crear nueva orden de mantención - CORREGIDO
    */
   createMantencion: async (ordenData: any): Promise<OrdenMantencion> => {
     try {
+      console.log('🛠️ Creando orden de mantención...');
+      
+      // 🎯 DEBUG MEJORADO
+      console.log('📤 JSON que se enviará al servidor:');
+      console.log(JSON.stringify(ordenData, null, 2));
+      
+      console.log('📋 Campos y tipos:');
+      Object.keys(ordenData).forEach(key => {
+        const value = ordenData[key];
+        console.log(`   ${key}:`, value, `(tipo: ${typeof value})`);
+      });
+      
       const response = await apiClient.post('/ordenes-mantenimiento', ordenData);
+      console.log('✅ Orden de mantención creada exitosamente:', response);
       return response;
     } catch (error) {
-      console.error('Error creating mantención:', error);
+      console.error('❌ Error creating mantención:', error);
       throw error;
     }
   },
@@ -246,10 +221,24 @@ export const ordenesService = {
    */
   createReparacion: async (ordenData: any): Promise<OrdenReparacion> => {
     try {
+      console.log('🔧 Creando orden de reparación...');
+      console.log('📋 Datos recibidos en servicio:', ordenData);
+      
+      // Verificar campos requeridos
+      const camposRequeridos = ['idMotor', 'idTecnico', 'idCliente', 'idUbicacion', 'fecha', 'observaciones', 'progreso', 'firmaCliente'];
+      const camposFaltantes = camposRequeridos.filter(campo => ordenData[campo] === undefined || ordenData[campo] === null);
+      
+      if (camposFaltantes.length > 0) {
+        console.error('❌ Campos faltantes:', camposFaltantes);
+        throw new Error(`Faltan campos requeridos: ${camposFaltantes.join(', ')}`);
+      }
+      
       const response = await apiClient.post('/ordenes-reparacion', ordenData);
+      console.log('✅ Orden de reparación creada exitosamente:', response);
       return response;
+      
     } catch (error) {
-      console.error('Error creating reparación:', error);
+      console.error('❌ Error creating reparación:', error);
       throw error;
     }
   },
@@ -283,7 +272,7 @@ export const ordenesService = {
   /**
    * Actualizar progreso de orden de reparación
    */
-   updateProgresoReparacion: async (id: number, progreso: string): Promise<OrdenReparacion> => {
+  updateProgresoReparacion: async (id: number, progreso: string): Promise<OrdenReparacion> => {
     try {
       const response = await apiClient.put(`/ordenes-reparacion/${id}/progreso`, {}, {
         params: { progreso }
@@ -335,19 +324,11 @@ export const ordenesService = {
       
       // Filtrar mantenciones
       const mantencionesFiltradas = mantenciones.filter(orden => 
-        orden.cliente?.nombre1?.toLowerCase().includes(termino.toLowerCase()) ||
-        orden.ubicacion?.nombre?.toLowerCase().includes(termino.toLowerCase()) ||
-        orden.equipo?.marca?.toLowerCase().includes(termino.toLowerCase()) ||
-        orden.equipo?.modelo?.toLowerCase().includes(termino.toLowerCase()) ||
         orden.observaciones?.toLowerCase().includes(termino.toLowerCase())
       );
       
       // Filtrar reparaciones
       const reparacionesFiltradas = reparaciones.filter(orden => 
-        orden.cliente?.nombre1?.toLowerCase().includes(termino.toLowerCase()) ||
-        orden.ubicacion?.nombre?.toLowerCase().includes(termino.toLowerCase()) ||
-        orden.equipo?.marca?.toLowerCase().includes(termino.toLowerCase()) ||
-        orden.equipo?.modelo?.toLowerCase().includes(termino.toLowerCase()) ||
         orden.observaciones?.toLowerCase().includes(termino.toLowerCase()) ||
         orden.progreso?.toLowerCase().includes(termino.toLowerCase())
       );

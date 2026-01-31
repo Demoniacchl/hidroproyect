@@ -67,14 +67,7 @@ function App() {
         <div className="App">
           <Routes>
             {/* Ruta principal - redirige basado en rol */}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <RoleBasedRedirect />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/" element={<RoleBasedRedirect />} />
             
             {/* Ruta de login */}
             <Route path="/login" element={<LoginForm />} />

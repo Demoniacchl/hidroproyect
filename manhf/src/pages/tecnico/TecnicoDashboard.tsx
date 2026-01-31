@@ -18,45 +18,98 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
   const [activeTab, setActiveTab] = useState<'hoy' | 'semana'>('hoy');
 
   useEffect(() => {
+    console.log('🔧 TECNICO DASHBOARD INICIADO');
+    console.log('👤 USUARIO CONTEXT:', user);
     cargarEventosTecnico();
   }, []);
 
   const cargarEventosTecnico = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Cargando eventos...');
+      
+      // Cargar eventos
       const eventos = await calendarioService.getEventos();
+      console.log('📅 EVENTOS CARGADOS:', eventos);
       
+      if (!eventos || eventos.length === 0) {
+        console.log('❌ NO HAY EVENTOS');
+        setEventosHoy([]);
+        setEventosSemana([]);
+        return;
+      }
+
       const hoy = new Date().toISOString().split('T')[0];
-      
-      // Eventos de hoy (asignados al técnico o sin asignar)
+      console.log('📆 HOY ES:', hoy);
+
+      // 🎯 FILTRO PARA EVENTOS DE HOY
       const eventosDeHoy = eventos.filter(evento => {
-        const fechaEvento = evento.fechaInicio?.split('T')[0];
-        return fechaEvento === hoy && 
-               (evento.estado === 'PROGRAMADO' || evento.estado === 'EN_PROCESO') &&
-               (evento.idTecnico === user?.idUsuario || !evento.idTecnico)
+        if (!evento.fechaInicio) {
+          console.log('❌ Evento sin fecha:', evento.idCalendario);
+          return false;
+        }
+        
+        const fechaEvento = evento.fechaInicio.split('T')[0];
+        const esHoy = fechaEvento === hoy;
+        
+        // Estados válidos: PROGRAMADO, EN_PROCESO, COMPLETADO
+        const estadoValido = evento.estado === 'PROGRAMADO' || 
+                            evento.estado === 'EN_PROCESO' || 
+                            evento.estado === 'COMPLETADO';
+        
+        // Técnico válido: sin técnico o asignado al usuario actual
+        const tecnicoValido = !evento.idTecnico || evento.idTecnico === user?.idUsuario;
+        
+        const pasaFiltro = esHoy && estadoValido && tecnicoValido;
+        
+        if (pasaFiltro) {
+          console.log(`✅ INCLUIDO HOY: ${evento.titulo} (${evento.estado})`);
+        }
+        
+        return pasaFiltro;
       });
-      
-      // Eventos de la semana (próximos 7 días)
+
+      // 🎯 FILTRO PARA EVENTOS DE LA SEMANA (EXCLUYENDO LOS DE HOY)
       const eventosDeLaSemana = eventos.filter(evento => {
         if (!evento.fechaInicio) return false;
         
         const fechaEvento = new Date(evento.fechaInicio);
-        const hoy = new Date();
+        const hoyObj = new Date();
         const finDeSemana = new Date();
-        finDeSemana.setDate(hoy.getDate() + 7);
+        finDeSemana.setDate(hoyObj.getDate() + 7);
         
-        return (
-          fechaEvento >= hoy && 
-          fechaEvento <= finDeSemana &&
-          (evento.estado === 'PROGRAMADO' || evento.estado === 'EN_PROCESO') &&
-          (evento.idTecnico === user?.idUsuario || !evento.idTecnico)
-        );
+        // Excluir eventos de hoy
+        const fechaEventoStr = evento.fechaInicio.split('T')[0];
+        const esHoy = fechaEventoStr === hoy;
+        
+        const enSemana = fechaEvento >= hoyObj && fechaEvento <= finDeSemana && !esHoy;
+        
+        // Estados válidos
+        const estadoValido = evento.estado === 'PROGRAMADO' || 
+                            evento.estado === 'EN_PROCESO' || 
+                            evento.estado === 'COMPLETADO';
+        
+        // Técnico válido
+        const tecnicoValido = !evento.idTecnico || evento.idTecnico === user?.idUsuario;
+        
+        const pasaFiltro = enSemana && estadoValido && tecnicoValido;
+        
+        if (pasaFiltro) {
+          console.log(`✅ INCLUIDO SEMANA: ${evento.titulo} (${fechaEventoStr})`);
+        }
+        
+        return pasaFiltro;
       });
 
+      console.log('📊 RESULTADOS FILTRADO:');
+      console.log('📍 Eventos de hoy:', eventosDeHoy.length);
+      console.log('📅 Eventos de la semana:', eventosDeLaSemana.length);
+      
       setEventosHoy(eventosDeHoy);
       setEventosSemana(eventosDeLaSemana);
+      
     } catch (error) {
-      console.error('Error cargando eventos:', error);
+      console.error('❌ ERROR CARGANDO EVENTOS:', error);
     } finally {
       setLoading(false);
     }
@@ -64,6 +117,8 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
 
   const handleTomarEvento = async (evento: EventoCalendario) => {
     try {
+      console.log('🎯 Tomando evento:', evento);
+      
       // Marcar evento como tomado por el técnico usando calendarioService
       await calendarioService.updateEvento(evento.idCalendario, {
         estado: 'EN_PROCESO',
@@ -84,7 +139,8 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
       // Recargar eventos
       cargarEventosTecnico();
     } catch (error) {
-      console.error('Error tomando evento:', error);
+      console.error('❌ Error tomando evento:', error);
+      alert('Error al tomar el evento: ' + error.message);
     }
   };
 
@@ -117,9 +173,54 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
     <div className="tecnico-dashboard">
       <div className="px-6 py-6">
         
+        {/* Header de Bienvenida */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            👋 Hola, {user?.nombre || 'Técnico'}
+          </h1>
+          <p className="text-gray-600">
+            Aquí tienes tus tareas programadas para hoy y la semana
+          </p>
+          <button 
+            onClick={cargarEventosTecnico}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            🔄 Recargar Eventos
+          </button>
+        </div>
+
         {/* Tarjetas de Acceso Rápido */}
         <div className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button 
+              onClick={() => handleNavigation('mantenciones')}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200 text-left"
+            >
+              <div className="flex items-center">
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <span className="text-blue-600 text-xl">🛠️</span>
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-semibold text-gray-900">Nueva Mantención</h3>
+                  <p className="text-sm text-gray-600">Crear orden de mantención</p>
+                </div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => handleNavigation('reparaciones')}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200 text-left"
+            >
+              <div className="flex items-center">
+                <div className="bg-orange-100 p-3 rounded-lg">
+                  <span className="text-orange-600 text-xl">🔧</span>
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-semibold text-gray-900">Nueva Reparación</h3>
+                  <p className="text-sm text-gray-600">Crear orden de reparación</p>
+                </div>
+              </div>
+            </button>
 
             <button 
               onClick={() => handleNavigation('historial')}
@@ -149,7 +250,7 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
               }`}
               onClick={() => setActiveTab('hoy')}
             >
-              📅 Tareas de Hoy
+              📅 Hoy ({eventosHoy.length})
             </button>
             <button
               className={`flex-1 py-4 text-center font-medium ${
@@ -159,7 +260,7 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
               }`}
               onClick={() => setActiveTab('semana')}
             >
-              📋 Tareas de la Semana
+              📋 Próxima Semana ({eventosSemana.length})
             </button>
           </div>
 
@@ -189,7 +290,7 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow text-center">
             <div className="text-2xl font-bold text-blue-600">{eventosHoy.length}</div>
-            <div className="text-sm text-gray-600">Tareas Hoy</div>
+            <div className="text-sm text-gray-600">Para Hoy</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow text-center">
             <div className="text-2xl font-bold text-green-600">
@@ -199,7 +300,7 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
           </div>
           <div className="bg-white p-4 rounded-lg shadow text-center">
             <div className="text-2xl font-bold text-orange-600">{eventosSemana.length}</div>
-            <div className="text-sm text-gray-600">Esta Semana</div>
+            <div className="text-sm text-gray-600">Próxima Semana</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow text-center">
             <div className="text-2xl font-bold text-purple-600">
@@ -214,7 +315,7 @@ const TecnicoDashboard: React.FC<TecnicoDashboardProps> = ({ onViewChange }) => 
   );
 };
 
-// Componente para lista de eventos (mejorado con fechas)
+// Componente para lista de eventos
 const EventosList: React.FC<{
   eventos: EventoCalendario[];
   onTomarEvento: (evento: EventoCalendario) => void;
@@ -269,11 +370,19 @@ const EventosList: React.FC<{
   if (eventos.length === 0) {
     return (
       <div className="text-center py-8">
-        <span className="text-4xl mb-2">📭</span>
+        <span className="text-4xl mb-2">
+          {tipo === 'hoy' ? '📭' : '📅'}
+        </span>
         <p className="text-gray-500">
           {tipo === 'hoy' 
-            ? 'No hay eventos programados para hoy' 
-            : 'No hay eventos para esta semana'
+            ? 'No hay eventos para hoy' 
+            : 'No hay eventos para la próxima semana'
+          }
+        </p>
+        <p className="text-sm text-gray-400 mt-2">
+          {tipo === 'hoy' 
+            ? 'Los eventos se mostrarán aquí si están programados para hoy'
+            : 'Los eventos de los próximos 7 días aparecerán aquí'
           }
         </p>
       </div>
@@ -320,6 +429,9 @@ const EventosList: React.FC<{
                 {evento.idEquipo && (
                   <span className="ml-3">⚙️ Equipo #{evento.idEquipo}</span>
                 )}
+                {evento.idTecnico && (
+                  <span className="ml-3">👤 Técnico #{evento.idTecnico}</span>
+                )}
               </div>
             </div>
           </div>
@@ -331,10 +443,10 @@ const EventosList: React.FC<{
               evento.estado === 'COMPLETADO' ? 'bg-green-100 text-green-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {evento.estado?.replace('_', ' ')}
+              {evento.estado?.replace('_', ' ') || 'Sin estado'}
             </span>
             
-            {evento.estado === 'PROGRAMADO' && (
+            {(evento.estado === 'PROGRAMADO' || !evento.estado) && (
               <button
                 onClick={() => onTomarEvento(evento)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
